@@ -1,4 +1,4 @@
-[My Website](https://ab2x3z.netlify.app)
+[Try it!](https://cheepchoop.netlify.app)
 
 # Attributions
 * ## Music:
