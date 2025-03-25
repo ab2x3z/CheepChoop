@@ -118,11 +118,11 @@ function loadAndRepeatTexture(manager, path, repeatFactor) {
 
 // ******************************  Audio Management  ******************************
 let backgroundMusic;
+let noMusic;
 
 function setupBackgroundMusic(music = 'Mind-Bender.mp3') {
     if (backgroundMusic && backgroundMusic.src.endsWith(music)) return;
     if (backgroundMusic) backgroundMusic.pause();
-
     backgroundMusic = new Audio(`assets/sounds/${music}`);
     backgroundMusic.loop = true;
     backgroundMusic.volume = 0.3;
@@ -450,7 +450,6 @@ document.addEventListener('keydown', (event) => {
     if (isDialogOpen) return; // Ignore input if dialog is open
     keysPressed[event.key.toLowerCase()] = true;
     userHasInteracted = true;
-    playBackgroundMusic();
 
     // if (event.key === 'g') {
     //     godMode = !godMode;
@@ -468,7 +467,6 @@ document.addEventListener('keyup', (event) => {
 });
 document.addEventListener('click', function () {
     userHasInteracted = true;
-    playBackgroundMusic();
 });
 function keyIsPressed(key) {
     return keysPressed[key.toLowerCase()] === true;
@@ -553,6 +551,8 @@ function lockPointer() {
     const canvas = renderer.domElement;
     canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock;
 
+    console.log(canvas.requestPointerLock);
+
     if (canvas.requestPointerLock) {
         canvas.requestPointerLock();
     }
@@ -565,8 +565,10 @@ document.addEventListener('mozpointerlockchange', pointerLockChange, false);
 function pointerLockChange() {
     if (document.pointerLockElement === renderer.domElement || document.mozPointerLockElement === renderer.domElement) {
         isPointerLocked = true;
+        togglePauseMenu(false);
     } else {
         isPointerLocked = false;
+        togglePauseMenu(true);
     }
 }
 
@@ -780,17 +782,23 @@ function move() {
             isFalling = true;
             setTimeout(() => {
                 setupBackgroundMusic('Past Sadness.mp3');
-                playBackgroundMusic();
+                if (!noMusic) {
+                    playBackgroundMusic();
+                }
             }, 500);
         }
     } else if (grounded && isFalling) {
         setupBackgroundMusic('Mind-Bender.mp3');
-        playBackgroundMusic();
+        if (backgroundMusic.paused && !noMusic) {
+            playBackgroundMusic();
+        }
         fallDistance = 0;
         isFalling = false;
     } else if (!isFalling) {
         setupBackgroundMusic('Mind-Bender.mp3');
-        playBackgroundMusic();
+        if (backgroundMusic.paused && !noMusic) {
+            playBackgroundMusic();
+        }
         fallDistance = 0;
     }
 
@@ -835,13 +843,7 @@ function move() {
 }
 
 const dialog = document.getElementById('usernameDialog');
-const submitButton = document.getElementById('submitScore');
 const cancelButton = document.getElementById('cancelDialog');
-
-submitButton.addEventListener('click', () => {
-    dialog.showModal();
-    isDialogOpen = true;
-});
 
 cancelButton.addEventListener('click', () => {
     dialog.close();
@@ -901,9 +903,51 @@ dialog.querySelector('form').addEventListener('submit', async (e) => {
     }
 });
 
+// Pause menu elements
+const pauseMenu = document.getElementById('pauseMenu');
+const musicToggle = document.getElementById('musicToggle');
+const returnButton = document.getElementById('returnButton');
+const submitScoreButton = document.getElementById('submitScoreButton');
+const resumeButton = document.getElementById('resumeButton');
+
+// Event listeners for pause menu buttons
+musicToggle.addEventListener('click', () => {
+    if (backgroundMusic) {
+        if (backgroundMusic.paused) {
+            noMusic = false;
+            backgroundMusic.play();
+            musicToggle.textContent = 'Disable Music';
+        } else {
+            noMusic = true;
+            backgroundMusic.pause();
+            musicToggle.textContent = 'Enable Music';
+        }
+    }
+});
+
+returnButton.addEventListener('click', () => {
+    window.location.href = 'index.html';
+});
+
+submitScoreButton.addEventListener('click', () => {
+    dialog.showModal();
+    isDialogOpen = true;
+});
+
+resumeButton.addEventListener('click', () => {
+    lockPointer();
+    togglePauseMenu(false);
+});
+
+// Function to show/hide pause menu
+function togglePauseMenu(show) {
+    pauseMenu.style.display = show ? 'block' : 'none';
+}
+
 // ******************************  Game Loop  ******************************
 function animate() {
     requestAnimationFrame(animate);
+    if (!isPointerLocked) return; // Pause game when menu is open
     move();
 
     // Update visible platforms
