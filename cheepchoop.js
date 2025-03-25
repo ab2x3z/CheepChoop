@@ -553,6 +553,8 @@ function lockPointer() {
     const canvas = renderer.domElement;
     canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock;
 
+    console.log(canvas.requestPointerLock);
+
     if (canvas.requestPointerLock) {
         canvas.requestPointerLock();
     }
@@ -565,8 +567,10 @@ document.addEventListener('mozpointerlockchange', pointerLockChange, false);
 function pointerLockChange() {
     if (document.pointerLockElement === renderer.domElement || document.mozPointerLockElement === renderer.domElement) {
         isPointerLocked = true;
+        togglePauseMenu(false);
     } else {
         isPointerLocked = false;
+        togglePauseMenu(true);
     }
 }
 
@@ -835,13 +839,7 @@ function move() {
 }
 
 const dialog = document.getElementById('usernameDialog');
-const submitButton = document.getElementById('submitScore');
 const cancelButton = document.getElementById('cancelDialog');
-
-submitButton.addEventListener('click', () => {
-    dialog.showModal();
-    isDialogOpen = true;
-});
 
 cancelButton.addEventListener('click', () => {
     dialog.close();
@@ -901,9 +899,49 @@ dialog.querySelector('form').addEventListener('submit', async (e) => {
     }
 });
 
+// Pause menu elements
+const pauseMenu = document.getElementById('pauseMenu');
+const musicToggle = document.getElementById('musicToggle');
+const returnButton = document.getElementById('returnButton');
+const submitScoreButton = document.getElementById('submitScoreButton');
+const resumeButton = document.getElementById('resumeButton'); // New resume button
+
+// Event listeners for pause menu buttons
+musicToggle.addEventListener('click', () => {
+    if (backgroundMusic) {
+        if (backgroundMusic.paused) {
+            backgroundMusic.play();
+            musicToggle.textContent = 'Disable Music';
+        } else {
+            backgroundMusic.pause();
+            musicToggle.textContent = 'Enable Music';
+        }
+    }
+});
+
+returnButton.addEventListener('click', () => {
+    window.location.href = 'index.html';
+});
+
+submitScoreButton.addEventListener('click', () => {
+    dialog.showModal();
+    isDialogOpen = true;
+});
+
+resumeButton.addEventListener('click', () => {
+    lockPointer(); // Capture the cursor
+    togglePauseMenu(false); // Close the pause menu
+});
+
+// Function to show/hide pause menu
+function togglePauseMenu(show) {
+    pauseMenu.style.display = show ? 'block' : 'none';
+}
+
 // ******************************  Game Loop  ******************************
 function animate() {
     requestAnimationFrame(animate);
+    if (!isPointerLocked) return; // Pause game when menu is open
     move();
 
     // Update visible platforms
