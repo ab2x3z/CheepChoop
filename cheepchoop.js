@@ -118,11 +118,11 @@ function loadAndRepeatTexture(manager, path, repeatFactor) {
 
 // ******************************  Audio Management  ******************************
 let backgroundMusic;
+let noMusic;
 
 function setupBackgroundMusic(music = 'Mind-Bender.mp3') {
     if (backgroundMusic && backgroundMusic.src.endsWith(music)) return;
     if (backgroundMusic) backgroundMusic.pause();
-
     backgroundMusic = new Audio(`assets/sounds/${music}`);
     backgroundMusic.loop = true;
     backgroundMusic.volume = 0.3;
@@ -450,7 +450,6 @@ document.addEventListener('keydown', (event) => {
     if (isDialogOpen) return; // Ignore input if dialog is open
     keysPressed[event.key.toLowerCase()] = true;
     userHasInteracted = true;
-    playBackgroundMusic();
 
     // if (event.key === 'g') {
     //     godMode = !godMode;
@@ -468,7 +467,6 @@ document.addEventListener('keyup', (event) => {
 });
 document.addEventListener('click', function () {
     userHasInteracted = true;
-    playBackgroundMusic();
 });
 function keyIsPressed(key) {
     return keysPressed[key.toLowerCase()] === true;
@@ -784,17 +782,23 @@ function move() {
             isFalling = true;
             setTimeout(() => {
                 setupBackgroundMusic('Past Sadness.mp3');
-                playBackgroundMusic();
+                if (!noMusic) {
+                    playBackgroundMusic();
+                }
             }, 500);
         }
     } else if (grounded && isFalling) {
         setupBackgroundMusic('Mind-Bender.mp3');
-        playBackgroundMusic();
+        if (backgroundMusic.paused && !noMusic) {
+            playBackgroundMusic();
+        }
         fallDistance = 0;
         isFalling = false;
     } else if (!isFalling) {
         setupBackgroundMusic('Mind-Bender.mp3');
-        playBackgroundMusic();
+        if (backgroundMusic.paused && !noMusic) {
+            playBackgroundMusic();
+        }
         fallDistance = 0;
     }
 
@@ -904,15 +908,17 @@ const pauseMenu = document.getElementById('pauseMenu');
 const musicToggle = document.getElementById('musicToggle');
 const returnButton = document.getElementById('returnButton');
 const submitScoreButton = document.getElementById('submitScoreButton');
-const resumeButton = document.getElementById('resumeButton'); // New resume button
+const resumeButton = document.getElementById('resumeButton');
 
 // Event listeners for pause menu buttons
 musicToggle.addEventListener('click', () => {
     if (backgroundMusic) {
         if (backgroundMusic.paused) {
+            noMusic = false;
             backgroundMusic.play();
             musicToggle.textContent = 'Disable Music';
         } else {
+            noMusic = true;
             backgroundMusic.pause();
             musicToggle.textContent = 'Enable Music';
         }
@@ -929,8 +935,8 @@ submitScoreButton.addEventListener('click', () => {
 });
 
 resumeButton.addEventListener('click', () => {
-    lockPointer(); // Capture the cursor
-    togglePauseMenu(false); // Close the pause menu
+    lockPointer();
+    togglePauseMenu(false);
 });
 
 // Function to show/hide pause menu
