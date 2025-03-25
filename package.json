@@ -4,25 +4,24 @@
     "version": "1.0.0",
     "type": "module",
     "scripts": {
-        "dev": "vite",
-        "build": "vite build",
-        "preview": "vite preview",
-        "start": "vite"
+      "dev": "vite",
+      "build": "vite build",
+      "preview": "vite preview",
+      "start": "vite"
     },
     "devDependencies": {
-        "@rollup/rollup-win32-x64-msvc": "^4.37.0",
-        "rollup": "^4.37.0",
-        "vite": "^5.4.2"
+      "vite": "^5.4.2"
     },
     "dependencies": {
-        "@azure/app-configuration": "^1.8.0",
-        "@azure/identity": "^4.7.0",
-        "@azure/keyvault-secrets": "^4.9.0",
-        "@mlc-ai/web-llm": "^0.2.20",
-        "oci-common": "^2.103.0",
-        "oci-objectstorage": "^2.103.0",
-        "oci-secrets": "^2.103.0",
-        "oracledb": "^6.8.0",
-        "three": "^0.173.0"
+      "@azure/app-configuration": "^1.8.0",
+      "@azure/identity": "^4.7.0",
+      "@azure/keyvault-secrets": "^4.9.0",
+      "@mlc-ai/web-llm": "^0.2.20",
+      "oci-common": "^2.103.0",
+      "oci-objectstorage": "^2.103.0",
+      "oci-secrets": "^2.103.0",
+      "oracledb": "^6.8.0",
+      "three": "^0.173.0"
     }
-}
+  }
+  
