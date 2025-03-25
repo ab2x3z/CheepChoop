@@ -1,4 +1,4 @@
-[Try it!](https://cheepchoop.netlify.app)
+# [>Play it!<](https://cheepchoop.netlify.app)
 
 # Attributions
 * ## Music:

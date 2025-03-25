@@ -888,7 +888,7 @@ dialog.querySelector('form').addEventListener('submit', async (e) => {
 
         isDialogOpen = false; // Reset dialog state
         // Redirect to main menu
-        window.location.href = 'mainmenu.html';
+        window.location.href = 'index.html';
     } catch (error) {
         console.error('Error submitting score:', error);
         alert('Failed to submit score. Please try again.');
