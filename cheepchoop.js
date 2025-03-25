@@ -848,7 +848,11 @@ cancelButton.addEventListener('click', () => {
     isDialogOpen = false;
 });
 
+let scoreSubmitted = false;
+
 dialog.querySelector('form').addEventListener('submit', async (e) => {
+    if (scoreSubmitted) return;
+    
     e.preventDefault();
     let username = document.getElementById('username').value.trim();
     if (!username) return;
@@ -886,9 +890,9 @@ dialog.querySelector('form').addEventListener('submit', async (e) => {
         const result = await response.json();
         console.log('Score submitted:', result);
 
+        scoreSubmitted = true; // Mark score as submitted
         isDialogOpen = false; // Reset dialog state
-        // Redirect to main menu
-        window.location.href = 'index.html';
+        window.location.href = 'index.html'; // Redirect to main menu
     } catch (error) {
         console.error('Error submitting score:', error);
         alert('Failed to submit score. Please try again.');
