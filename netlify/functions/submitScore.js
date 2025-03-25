@@ -1,16 +1,36 @@
-// Simple in-memory store for rate limiting
-const requestStore = new Map();
+import { v4 as uuidv4 } from 'uuid';
+import cookie from 'cookie';
 
-function isRateLimited(ip) {
-  const now = Date.now();
-  const windowMs = 60 * 1000; // 1 minute window
-  const maxRequests = 5; // max requests per window
+async function checkPreviousScore(id, score) {
+  try {
+    const response = await fetch(process.env.ORACLE);
 
-  const requests = requestStore.get(ip) || [];
-  const recentRequests = requests.filter(time => time > now - windowMs);
-  
-  requestStore.set(ip, [...recentRequests, now]);
-  return recentRequests.length >= maxRequests;
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const entries = data.items;
+
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i];
+
+      const decodedId = Buffer.from(entry.id, 'base64').toString('hex').toUpperCase();
+
+      if (decodedId === id && entry.score < score) {
+        return { exists: true, higher: true };
+      } else if (decodedId === id && entry.score >= score) {
+        return { exists: true, higher: false };
+      }
+    }
+
+    return { exists: false, higher: false };
+
+  } catch (error) {
+    console.error('Error retrieving high scores:', error);
+    console.error('Error details:', error.message, error.stack);
+    return { exists: false, higher: false };
+  }
 }
 
 export const handler = async (event, context) => {
@@ -19,32 +39,21 @@ export const handler = async (event, context) => {
   // Check method
   if (event.httpMethod !== 'POST') {
     console.log('Method Not Allowed:', event.httpMethod);
-    return { 
-      statusCode: 405, 
+    return {
+      statusCode: 405,
       body: JSON.stringify({ error: 'Method not allowed' }),
       headers: { 'Content-Type': 'application/json' }
     };
   }
 
-  // Rate limiting
-  const clientIP = event.headers['client-ip'] || event.headers['x-forwarded-for'];
-  if (isRateLimited(clientIP)) {
-    return {
-      statusCode: 429,
-      body: JSON.stringify({ error: 'Too many requests' }),
-      headers: { 'Content-Type': 'application/json' }
-    };
-  }
-
   try {
-    console.log('Parsing event body');
     // Parse and validate input
     const { playerName, score, level } = JSON.parse(event.body);
 
     // Validate playerName
-    if (!playerName || typeof playerName !== 'string' || 
-        playerName.length > 50 || 
-        !/^[a-zA-Z0-9-_. ]+$/.test(playerName)) {
+    if (!playerName || typeof playerName !== 'string' ||
+      playerName.length > 50 ||
+      !/^[a-zA-Z0-9-_. ]+$/.test(playerName)) {
       return {
         statusCode: 400,
         body: JSON.stringify({ error: 'Invalid player name' }),
@@ -80,22 +89,61 @@ export const handler = async (event, context) => {
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
 
+    // Generate or retrieve unique ID from cookies
+    let uniqueUserId;
+    const cookies = cookie.parse(event.headers.cookie || '');
+    if (cookies.uniqueUserId) {
+      uniqueUserId = cookies.uniqueUserId;
+    } else {
+      uniqueUserId = uuidv4().replace(/-/g, '').toUpperCase(); // Generate a 32-character ID
+    }
+
+    // Set the cookie if not already set
+    const setCookieHeader = cookies.uniqueUserId ? {} : {
+      'Set-Cookie': cookie.serialize('uniqueUserId', uniqueUserId, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 60 * 60 * 24 * 365 // 1 year
+      })
+    };
+
+    // Check for previous highscore
+    const { exists: alreadyExists, higher: isHigher } = await checkPreviousScore(uniqueUserId, score);
+
+    console.log('alreadyExists:', alreadyExists);
+    console.log('isHigher:', isHigher);
+
+
     // Prepare payload
     const payload = {
+      id: uniqueUserId,
       player_name: sanitizedName,
       score: numScore.toString(),
       lastlevel: level
     };
 
-    // Make request to backend
-    const response = await fetch(process.env.ORACLE, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Client-IP': clientIP
-      },
-      body: JSON.stringify(payload)
-    });
+    let response;
+    if (alreadyExists && isHigher) {
+      // Make PUT request to update existing highscore
+      response = await fetch(`${process.env.ORACLE}/${uniqueUserId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+    } else if (!alreadyExists) {
+      // Make POST request to submit new highscore
+      response = await fetch(process.env.ORACLE, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+    } else {
+      throw new Error('Already submitted a higher score!')
+    }
 
     if (!response.ok) {
       throw new Error(`Backend error: ${response.status}`);
@@ -104,9 +152,9 @@ export const handler = async (event, context) => {
     let result;
     try {
       result = await response.json();
-      console.log('Response parsed successfully:', result);
+      console.log('Response parsed successfully:');
     } catch (parseError) {
-        throw parseError;
+      throw parseError;
     }
 
     // Return success
@@ -115,7 +163,8 @@ export const handler = async (event, context) => {
       body: JSON.stringify({ message: 'Score submitted successfully' }),
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': 'no-store'
+        'Cache-Control': 'no-store',
+        ...setCookieHeader
       }
     };
 
