@@ -852,7 +852,8 @@ let scoreSubmitted = false;
 
 dialog.querySelector('form').addEventListener('submit', async (e) => {
     if (scoreSubmitted) return;
-    
+    scoreSubmitted = true;
+
     e.preventDefault();
     let username = document.getElementById('username').value.trim();
     if (!username) return;
@@ -890,7 +891,6 @@ dialog.querySelector('form').addEventListener('submit', async (e) => {
         const result = await response.json();
         console.log('Score submitted:', result);
 
-        scoreSubmitted = true; // Mark score as submitted
         isDialogOpen = false; // Reset dialog state
         window.location.href = 'index.html'; // Redirect to main menu
     } catch (error) {

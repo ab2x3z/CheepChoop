@@ -54,7 +54,7 @@ export const handler = async (event, context) => {
 
     // Validate score
     const numScore = Number(score);
-    if (isNaN(numScore) || numScore < 0 || numScore > 9999) {
+    if (isNaN(numScore) || numScore <= 0 || numScore > 9999) {
       return {
         statusCode: 400,
         body: JSON.stringify({ error: 'Invalid score' }),
@@ -63,7 +63,7 @@ export const handler = async (event, context) => {
     }
 
     // Validate level
-    const validLevels = ['AGround', 'Wood', 'Brick', 'Sand', 'Marble', 'Obsidian', 'Sleep'];
+    const validLevels = ['Ground', 'Wood', 'Brick', 'Sand', 'Marble', 'Obsidian', 'Sleep'];
     if (!validLevels.includes(level)) {
       return {
         statusCode: 400,
