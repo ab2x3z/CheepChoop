@@ -1,6 +1,38 @@
 import { v4 as uuidv4 } from 'uuid';
 import cookie from 'cookie';
 
+async function getAuthToken() {
+  try {
+    const authUrl = `https://g6db25fb47e8e54-firstdb.adb.ca-montreal-1.oraclecloudapps.com/ords/admin/oauth/token`;
+
+    if (!userId || !userSecret) {
+      throw new Error("ORACLE_CLIENT_ID and ORACLE_CLIENT_SECRET environment variables must be set.");
+    }
+
+    const authString = Buffer.from(`${process.env.ORACLE_CLIENT_ID}:${process.env.ORACLE_CLIENT_SECRET}`).toString('base64');
+
+    const response = await fetch(authUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Basic ${authString}`
+      },
+      body: 'grant_type=client_credentials'
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to retrieve auth token: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.access_token;  // Assuming the response contains an access_token field
+  } catch (error) {
+    console.error('Error getting auth token:', error);
+    console.error('Error details:', error.message, error.stack);
+    throw error;
+  }
+}
+
 async function checkPreviousScore(id, score) {
   try {
     const response = await fetch(process.env.ORACLE);
