@@ -142,10 +142,23 @@ export const handler = async (event, context) => {
         body: JSON.stringify(payload)
       });
     } else {
-      throw new Error('Already submitted a higher score!')
+      // Score exists and is not higher, return a specific status code
+      return {
+        statusCode: 409, // Conflict status code
+        body: JSON.stringify({ error: 'Already submitted a higher score!' }),
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store',
+           ...setCookieHeader // Still include cookie header if needed
+        }
+      };
     }
 
-    if (!response.ok) {
+    // This part is now only reached if a POST or PUT was successful
+    if (!response.ok) { 
+      // Handle potential errors from the actual POST/PUT request
+      const errorBody = await response.text(); // Try to get error details from backend
+      console.error(`Backend error: ${response.status}`, errorBody);
       throw new Error(`Backend error: ${response.status}`);
     }
 

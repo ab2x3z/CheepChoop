@@ -888,7 +888,19 @@ dialog.querySelector('form').addEventListener('submit', async (e) => {
             credentials: 'same-origin'
         });
 
-        if (!response.ok) throw new Error('Failed to submit score');
+        // Check if the response status indicates success (2xx)
+        if (!response.ok) {
+            // Check for the specific 409 Conflict status
+            if (response.status === 409) {
+                const errorData = await response.json();
+                if (errorData.error === 'Already submitted a higher score!') {
+                    // Throw a specific error to be caught below
+                    throw new Error('Already submitted a higher score!'); 
+                }
+            }
+            // For other errors, throw a generic error
+            throw new Error(`Failed to submit score. Status: ${response.status}`);
+        }
 
         const result = await response.json();
         console.log('Score submitted:', result);
@@ -898,7 +910,13 @@ dialog.querySelector('form').addEventListener('submit', async (e) => {
     } catch (error) {
         scoreSubmitted = false; // Reset submission state
         console.error('Error submitting score:', error);
-        alert('Failed to submit score. Please try again.');
+        // Check for the specific error message we threw above
+        if (error.message === 'Already submitted a higher score!') {
+            alert('You have already submitted a higher score.');
+        } else {
+            // Handle other errors (network issues, generic server errors, etc.)
+            alert('Failed to submit score. Please try again.');
+        }
         isDialogOpen = false; // Reset dialog state on error
     }
 });
