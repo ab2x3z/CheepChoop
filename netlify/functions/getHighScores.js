@@ -7,7 +7,14 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const response = await fetch(process.env.ORACLE);
+    const response = await fetch(process.env.ORACLE + 'getAll',
+      {
+        method: 'GET',
+        headers: {
+          'Authorization': 'Bearer obQPnfpSRBnWmuyZyBpGvg'
+        }
+      }
+    );
     
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);

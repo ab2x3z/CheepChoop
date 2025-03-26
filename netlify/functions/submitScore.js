@@ -15,6 +15,8 @@ async function checkPreviousScore(id, score) {
     for (let i = 0; i < entries.length; i++) {
       const entry = entries[i];
 
+      console.log(`rowid: ${entry.ROWID}`)
+
       const decodedId = Buffer.from(entry.id, 'base64').toString('hex').toUpperCase();
 
       if (decodedId === id && entry.score < score) {
@@ -108,7 +110,7 @@ export const handler = async (event, context) => {
     };
 
     // Check for previous highscore
-    const { exists: alreadyExists, higher: isHigher } = await checkPreviousScore(uniqueUserId, score);
+    const { exists: alreadyExists, higher: isHigher, rowId: entryId } = await checkPreviousScore(uniqueUserId, score);
 
     console.log('alreadyExists:', alreadyExists);
     console.log('isHigher:', isHigher);
@@ -134,7 +136,7 @@ export const handler = async (event, context) => {
       });
     } else if (!alreadyExists) {
       // Make POST request to submit new highscore
-      response = await fetch(process.env.ORACLE, {
+      response = await fetch(`${process.env.ORACLE}/${uniqueUserId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -146,19 +148,19 @@ export const handler = async (event, context) => {
       return {
         statusCode: 409, // Conflict status code
         body: JSON.stringify({ error: 'Already submitted a higher score!' }),
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Cache-Control': 'no-store',
-           ...setCookieHeader // Still include cookie header if needed
+          ...setCookieHeader // Still include cookie header if needed
         }
       };
     }
 
     // This part is now only reached if a POST or PUT was successful
-    if (!response.ok) { 
+    if (!response.ok) {
       // Handle potential errors from the actual POST/PUT request
       const errorBody = await response.text(); // Try to get error details from backend
-      console.error(`Backend error: ${response.status}`, errorBody);
+      console.error(`Backend error: ${response.status} and body : ${errorBody}`);
       throw new Error(`Backend error: ${response.status}`);
     }
 
