@@ -5,10 +5,6 @@ async function getAuthToken() {
   try {
     const authUrl = `https://g6db25fb47e8e54-firstdb.adb.ca-montreal-1.oraclecloudapps.com/ords/admin/oauth/token`;
 
-    if (!userId || !userSecret) {
-      throw new Error("ORACLE_CLIENT_ID and ORACLE_CLIENT_SECRET environment variables must be set.");
-    }
-
     const authString = Buffer.from(`${process.env.ORACLE_CLIENT_ID}:${process.env.ORACLE_CLIENT_SECRET}`).toString('base64');
 
     const response = await fetch(authUrl, {
@@ -25,7 +21,8 @@ async function getAuthToken() {
     }
 
     const data = await response.json();
-    return data.access_token;  // Assuming the response contains an access_token field
+
+    return data.access_token;
   } catch (error) {
     console.error('Error getting auth token:', error);
     console.error('Error details:', error.message, error.stack);
@@ -35,7 +32,15 @@ async function getAuthToken() {
 
 async function checkPreviousScore(id, score) {
   try {
-    const response = await fetch(process.env.ORACLE);
+    const authToken = await getAuthToken();
+
+    const response = await fetch(`${process.env.ORACLE}getAll`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
+      }
+    });
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -46,8 +51,6 @@ async function checkPreviousScore(id, score) {
 
     for (let i = 0; i < entries.length; i++) {
       const entry = entries[i];
-
-      console.log(`rowid: ${entry.ROWID}`)
 
       const decodedId = Buffer.from(entry.id, 'base64').toString('hex').toUpperCase();
 
@@ -136,7 +139,7 @@ export const handler = async (event, context) => {
     const setCookieHeader = cookies.uniqueUserId ? {} : {
       'Set-Cookie': cookie.serialize('uniqueUserId', uniqueUserId, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
+        secure: process.env.ENV === 'prod',
         maxAge: 60 * 60 * 24 * 365 // 1 year
       })
     };
@@ -147,6 +150,7 @@ export const handler = async (event, context) => {
     console.log('alreadyExists:', alreadyExists);
     console.log('isHigher:', isHigher);
 
+    const authToken = await getAuthToken();
 
     // Prepare payload
     const payload = {
@@ -159,19 +163,21 @@ export const handler = async (event, context) => {
     let response;
     if (alreadyExists && isHigher) {
       // Make PUT request to update existing highscore
-      response = await fetch(`${process.env.ORACLE}/${uniqueUserId}`, {
+      response = await fetch(`${process.env.ORACLE}${uniqueUserId}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify(payload)
       });
     } else if (!alreadyExists) {
       // Make POST request to submit new highscore
-      response = await fetch(`${process.env.ORACLE}/${uniqueUserId}`, {
+      response = await fetch(`${process.env.ORACLE}${uniqueUserId}`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authToken}`
         },
         body: JSON.stringify(payload)
       });
@@ -182,8 +188,7 @@ export const handler = async (event, context) => {
         body: JSON.stringify({ error: 'Already submitted a higher score!' }),
         headers: {
           'Content-Type': 'application/json',
-          'Cache-Control': 'no-store',
-          ...setCookieHeader // Still include cookie header if needed
+          'Cache-Control': 'no-store' 
         }
       };
     }
@@ -196,13 +201,13 @@ export const handler = async (event, context) => {
       throw new Error(`Backend error: ${response.status}`);
     }
 
-    let result;
-    try {
-      result = await response.json();
-      console.log('Response parsed successfully:');
-    } catch (parseError) {
-      throw parseError;
-    }
+    // let result;
+    // try {
+    //   result = await response.json();
+    //   console.log('Response parsed successfully:');
+    // } catch (parseError) {
+    //   throw parseError;
+    // }
 
     // Return success
     return {

@@ -1,3 +1,32 @@
+async function getAuthToken() {
+  try {
+    const authUrl = `https://g6db25fb47e8e54-firstdb.adb.ca-montreal-1.oraclecloudapps.com/ords/admin/oauth/token`;
+
+    const authString = Buffer.from(`${process.env.ORACLE_CLIENT_ID}:${process.env.ORACLE_CLIENT_SECRET}`).toString('base64');
+
+    const response = await fetch(authUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Basic ${authString}`
+      },
+      body: 'grant_type=client_credentials'
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to retrieve auth token: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    return data.access_token;
+  } catch (error) {
+    console.error('Error getting auth token:', error);
+    console.error('Error details:', error.message, error.stack);
+    throw error;
+  }
+}
+
 export const handler = async (event, context) => {
   console.log('getHighScores function invoked');
 
@@ -7,15 +36,16 @@ export const handler = async (event, context) => {
   }
 
   try {
-    const response = await fetch(process.env.ORACLE + 'getAll',
-      {
-        method: 'GET',
-        headers: {
-          'Authorization': 'Bearer obQPnfpSRBnWmuyZyBpGvg'
-        }
+    const authToken = await getAuthToken();
+
+    const response = await fetch(`${process.env.ORACLE}getAll`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${authToken}`
       }
-    );
-    
+    });
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
