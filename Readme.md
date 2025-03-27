@@ -1,4 +1,7 @@
-# [>Play it!<](https://cheepchoop.netlify.app)
+<div style="text-align: center;">
+  <a href="https://cheepchoop.netlify.app" style="display: inline-block; text-decoration: none; font-size: 4rem; margin: 2rem;">>Play it!<</a>
+</div>
+
 
 # Attributions
 * ## Music:
@@ -13,3 +16,4 @@
 * ## Assets:
     *   "round platform" (https://skfb.ly/ovIAF) by n0stardust is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
     *   "Bed" (https://skfb.ly/6QZQQ) by Znyth Technologies is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
+    *   "Trashbag" (https://skfb.ly/6UDQS) by Giora is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).

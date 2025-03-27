@@ -12,7 +12,9 @@ const LevelType = {
     MARBLE: { value: 4, name: 'Marble' },
     OBSIDIAN: { value: 5, name: 'Obsidian' },
     SCIFI: { value: 6, name: 'Sci-Fi' },
-    SLEEP: { value: 7, name: 'Sleep' }
+    SLEEP: { value: 7, name: 'Sleep' },
+    NULL: { value: 8, name: '???' },
+    TRASH: { value: 9, name: 'Trash' }
 };
 
 const RepeatFactor = 100;
@@ -73,6 +75,14 @@ const platformLevels = [
     {
         type: LevelType.SLEEP,
         model: 'assets/glTFs/bed/scene.gltf'
+    },
+    {
+        type: LevelType.NULL,
+        size: 100
+    },
+    {
+        type: LevelType.TRASH,
+        model: 'assets/glTFs/trashbag/scene.gltf'
     }
 ];
 
@@ -290,21 +300,12 @@ function createPlatforms(manager, levels) {
         const normal = loadTexture(manager, `assets/platforms/${level.normal}`);
         const displacement = loadTexture(manager, `assets/platforms/${level.displacement}`);
         const roughness = loadTexture(manager, `assets/platforms/${level.roughness}`);
+        const ao = loadTexture(manager, `assets/platforms/${level.ao}`);
 
-        if (level.ao) {
-            const ao = loadTexture(manager, `assets/platforms/${level.ao}`);
-            return new THREE.MeshStandardMaterial({
-                map: texture,
-                normalMap: normal,
-                aoMap: ao,
-                displacementMap: displacement,
-                roughnessMap: roughness,
-                displacementScale: 0
-            });
-        }
         return new THREE.MeshStandardMaterial({
             map: texture,
             normalMap: normal,
+            aoMap: ao,
             displacementMap: displacement,
             roughnessMap: roughness,
             displacementScale: 0
@@ -317,7 +318,6 @@ function createPlatforms(manager, levels) {
         for (let i = 0; i < numberOfPlatforms; i++) {
             let platform;
 
-            // Load an assets for levels after Obsidian
             if (level.type === LevelType.SCIFI) {
                 platform = new THREE.Mesh();
                 loader.load(level.model, (gltf) => {
@@ -331,6 +331,20 @@ function createPlatforms(manager, levels) {
                     const model = gltf.scene;
                     model.scale.set(0.03, 0.03, 0.03);
                     model.position.y -= 4;
+                    platform.add(model);
+                });
+            } else if (level.type === LevelType.NULL) {
+                platform = new THREE.Mesh(
+                    new THREE.BoxGeometry(level.size, 1, level.size),
+                    new THREE.MeshBasicMaterial({ visible: false })
+                );
+            } else if (level.type === LevelType.TRASH) {
+                platform = new THREE.Mesh();
+                loader.load(level.model, (gltf) => {
+                    const model = gltf.scene;
+                    model.scale.set(10, 10, 10);
+                    model.position.y -= 8;
+                    model.rotateX(Math.PI);
                     platform.add(model);
                 });
             } else {
@@ -357,6 +371,11 @@ function createPlatforms(manager, levels) {
 
             newPosition.x = lastPlatformPosition.x + horizontalOffset.x;
             newPosition.z = lastPlatformPosition.z + horizontalOffset.z;
+
+            if (platform.levelType === LevelType.NULL) {
+                newPosition.x = lastPlatformPosition.x;
+                newPosition.z = lastPlatformPosition.z;
+            }
 
             platform.position.copy(newPosition);
 
@@ -459,16 +478,16 @@ document.addEventListener('keydown', (event) => {
     currentHeightDiv.style.setProperty("--hud-display", "flex");
     maxHeightDiv.style.setProperty("--hud-display", "flex");
     currentLevelDiv.style.setProperty("--hud-display", "block");
-    
-    // if (event.key === 'g') {
-    //     godMode = !godMode;
-    //     if (godMode) {
-    //         previousLevel = document.getElementById('currentLevel').textContent;
-    //         document.getElementById('currentLevel').textContent = 'GodMode';
-    //     } else {
-    //         document.getElementById('currentLevel').textContent = previousLevel;
-    //     }
-    // }
+
+    if (event.key === 'g') {
+        godMode = !godMode;
+        if (godMode) {
+            previousLevel = document.getElementById('currentLevel').textContent;
+            document.getElementById('currentLevel').textContent = 'GodMode';
+        } else {
+            document.getElementById('currentLevel').textContent = previousLevel;
+        }
+    }
 });
 document.addEventListener('keyup', (event) => {
     if (isDialogOpen) return; // Ignore input if dialog is open
@@ -506,6 +525,22 @@ function checkSphereBoxCollision(sphere, box) {
     if (box.levelType === LevelType.SCIFI) {
         // For model platforms, use a cylindrical collision shape
         const radiusSquared = 550; // Radius of 5 units for collision
+        const height = 1.5; // Height of collision cylinder
+
+        // Check horizontal distance (using x and z)
+        const dx = spherePosition.x - boxPosition.x;
+        const dz = spherePosition.z - boxPosition.z;
+        const distanceSquared = dx * dx + dz * dz;
+
+        // Check if within radius and height
+        if (distanceSquared <= radiusSquared) {
+            const dy = Math.abs(spherePosition.y - boxPosition.y);
+            return dy <= height + sphereRadius;
+        }
+        return false;
+    } else if (box.levelType === LevelType.TRASH) {
+        // For model platforms, use a cylindrical collision shape
+        const radiusSquared = 100; // Radius of 5 units for collision
         const height = 1.5; // Height of collision cylinder
 
         // Check horizontal distance (using x and z)
@@ -755,6 +790,21 @@ function move() {
                         setLevelText(LevelType.SLEEP.name);
                         if (maxLevel.value < LevelType.SLEEP.value) {
                             setMaxLevel(LevelType.SLEEP);
+                        }
+                        break;
+
+                    case LevelType.NULL:
+                        setLevelText(LevelType.NULL.name);
+                        if (maxLevel.value < LevelType.NULL.value) {
+                            setMaxLevel(LevelType.NULL);
+                        }
+                        break;
+
+                    case LevelType.TRASH:
+                        playSound("assets/sounds/se_common_landing_trash.wav");
+                        setLevelText(LevelType.TRASH.name);
+                        if (maxLevel.value < LevelType.TRASH.value) {
+                            setMaxLevel(LevelType.TRASH);
                         }
                         break;
 
