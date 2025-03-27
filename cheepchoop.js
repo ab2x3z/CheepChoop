@@ -443,6 +443,10 @@ scene.background = skybox;
 
 // Get key presses
 let userHasInteracted = false;
+const interactionMessageDiv = document.getElementById('interactionMessage');
+const currentHeightDiv = document.getElementById('currentHeight');
+const maxHeightDiv = document.getElementById('maxHeight');
+const currentLevelDiv = document.getElementById('currentLevel');
 const keysPressed = {};
 let isDialogOpen = false;
 let previousLevel;
@@ -451,6 +455,11 @@ document.addEventListener('keydown', (event) => {
     if (isDialogOpen) return; // Ignore input if dialog is open
     keysPressed[event.key.toLowerCase()] = true;
     userHasInteracted = true;
+    interactionMessageDiv.style.display = 'none';
+    currentHeightDiv.style.setProperty("--hud-display", "flex");
+    maxHeightDiv.style.setProperty("--hud-display", "flex");
+    currentLevelDiv.style.setProperty("--hud-display", "block");
+    
 
     // if (event.key === 'g') {
     //     godMode = !godMode;
@@ -468,6 +477,10 @@ document.addEventListener('keyup', (event) => {
 });
 document.addEventListener('click', function () {
     userHasInteracted = true;
+    interactionMessageDiv.style.display = 'none';
+    currentHeightDiv.style.setProperty("--hud-display", "flex");
+    maxHeightDiv.style.setProperty("--hud-display", "flex");
+    currentLevelDiv.style.setProperty("--hud-display", "block");
 });
 function keyIsPressed(key) {
     return keysPressed[key.toLowerCase()] === true;
@@ -969,6 +982,10 @@ function togglePauseMenu(show) {
 // ******************************  Game Loop  ******************************
 function animate() {
     requestAnimationFrame(animate);
+    if (!userHasInteracted && !isLoading) {
+        interactionMessageDiv.style.display = 'flex';
+        return; // Pause game logic until interaction
+    }
     if (!isPointerLocked) return; // Pause game when menu is open
     move();
 

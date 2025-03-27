@@ -1,3 +1,7 @@
+:root {
+    --hud-display: none;
+  }
+
 canvas {
     position: fixed;
     top: 0;
@@ -21,6 +25,7 @@ canvas {
 }
 
 #currentLevel {
+    display: var(--hud-display) !important;
     position: absolute;
     bottom: 2rem;
     left: 2rem;
@@ -39,6 +44,7 @@ canvas {
 }
 
 #currentHeight {
+    display: var(--hud-display) !important;
     position: absolute;
     top: 2rem;
     right: 2rem;
@@ -64,6 +70,7 @@ canvas {
 }
 
 #maxHeight {
+    display: var(--hud-display) !important;
     position: absolute;
     top: 2rem;
     left: 2rem;
@@ -302,4 +309,16 @@ dialog button:hover {
 #returnButton:hover {
     background-color: #e53935;
     transform: scale(1.05);
+}
+
+#interactionMessage {
+  display: none;
+  pointer-events: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 2rem;
+  color: white;
+  text-align: center;
 }
