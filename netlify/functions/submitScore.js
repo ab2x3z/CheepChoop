@@ -32,7 +32,7 @@ async function checkPreviousScore(id, score) {
   try {
     const authToken = await getAuthToken();
 
-    const response = await fetch(`${process.env.ORACLE}getAll`, {
+    const response = await fetch(`${process.env.ORACLE}${id}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -45,21 +45,16 @@ async function checkPreviousScore(id, score) {
     }
 
     const data = await response.json();
-    const entries = data.items;
 
-    for (let i = 0; i < entries.length; i++) {
-      const entry = entries[i];
-
-      const decodedId = Buffer.from(entry.id, 'base64').toString('hex').toUpperCase();
-
-      if (decodedId === id && entry.score < score) {
-        return { exists: true, higher: true };
-      } else if (decodedId === id && entry.score >= score) {
-        return { exists: true, higher: false };
-      }
+    if (data.count === 0) {
+      return { exists: false, higher: false };
     }
 
-    return { exists: false, higher: false };
+    if (data.items[0].score < score) {
+      return { exists: true, higher: true };
+    } else {
+      return { exists: true, higher: false };
+    }
 
   } catch (error) {
     console.error('Error retrieving high scores:', error);
@@ -186,7 +181,7 @@ export const handler = async (event, context) => {
         body: JSON.stringify({ error: 'Already submitted a higher score!' }),
         headers: {
           'Content-Type': 'application/json',
-          'Cache-Control': 'no-store' 
+          'Cache-Control': 'no-store'
         }
       };
     }
