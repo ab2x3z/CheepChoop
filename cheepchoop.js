@@ -102,6 +102,7 @@ manager.onProgress = (url, itemsLoaded, itemsTotal) =>
 manager.onLoad = () => {
     progressBarContainer.style.display = 'none';
     document.getElementById('bg').style.display = 'block';
+    isLoading = false; // Set loading state to false when loading is complete
 };
 
 // ******************************  Texture Loading Utilities  ******************************
@@ -483,6 +484,7 @@ let fallDistance;
 let isFalling;
 let godMode = false;
 const upVector = new THREE.Vector3(0, 1, 0);
+let isLoading = true;
 
 // Collision detection function (Sphere - Box)
 function checkSphereBoxCollision(sphere, box) {
@@ -617,6 +619,8 @@ function setMaxLevel(level) {
 }
 
 function move() {
+    if (isLoading) return; // Don't allow movement while loading
+
     let moveDirection = new THREE.Vector3();
     let moveSpeed = keyIsPressed('Shift') ? runSpeed : walkSpeed;
 
