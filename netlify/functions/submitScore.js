@@ -50,11 +50,7 @@ async function checkPreviousScore(id, score) {
       return { exists: false, higher: false };
     }
 
-    if (data.items[0].score < score) {
-      return { exists: true, higher: true };
-    } else {
-      return { exists: true, higher: false };
-    }
+    return { exists: true, higher: data.items[0].score < score };
 
   } catch (error) {
     console.error('Error retrieving high scores:', error);
@@ -138,11 +134,9 @@ export const handler = async (event, context) => {
     };
 
     // Check for previous highscore
-    const { exists: alreadyExists, higher: isHigher, rowId: entryId } = await checkPreviousScore(uniqueUserId, score);
+    const { exists: alreadyExists, higher: isHigher } = await checkPreviousScore(uniqueUserId, score);
 
-    console.log('alreadyExists:', alreadyExists);
-    console.log('isHigher:', isHigher);
-
+    // Get auth token
     const authToken = await getAuthToken();
 
     // Prepare payload
