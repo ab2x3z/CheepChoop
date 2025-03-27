@@ -1,42 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CheepChoop - Main Menu</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="icon" type="image/svg+xml" href="favicon.svg"/>
-    <style>
-        .leaderboard-content {
-            background: rgba(0, 0, 0, 0.8);
-            padding: 20px;
-            border-radius: 10px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-
-        .leaderboard table {
-            width: 100%;
-            border-collapse: collapse;
-            color: white;
-        }
-
-        .leaderboard th, .leaderboard td {
-            padding: 8px;
-            text-align: left;
-            border-bottom: 1px solid #444;
-        }
-
-        .leaderboard th {
-            background-color: #222;
-            color: #fff;
-        }
-
-        .leaderboard tr:nth-child(even) {
-            background-color: rgba(255, 255, 255, 0.1);
-        }
-    </style>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
 </head>
+
 <body>
     <div class="container">
         <div class="game-title">
@@ -49,6 +21,7 @@
             <div class="leaderboard">
                 <h2>Leaderboard</h2>
                 <div class="leaderboard-content" id="leaderboardContent">
+                    <!-- Content will be loaded here -->
                 </div>
             </div>
         </div>
@@ -61,15 +34,17 @@
 
     <script>
         async function displayHighScores() {
+            const leaderboardContent = document.getElementById('leaderboardContent');
+
+            leaderboardContent.classList.remove('loaded');
+            leaderboardContent.innerHTML = '<p class="loading-message">Loading highscores...</p>';
+
             try {
                 const response = await fetch('/.netlify/functions/getHighScores');
                 if (!response.ok) throw new Error('Failed to get high scores');
                 console.log('Response:', response);
                 let scores = await response.json();
-                
                 scores.sort((a, b) => b.score - a.score);
-
-                const leaderboardContent = document.getElementById('leaderboardContent');
 
                 leaderboardContent.innerHTML = `
                     <table>
@@ -91,15 +66,19 @@
                         `).join('')}
                     </table>
                 `;
+                
+                leaderboardContent.classList.add('loaded');
+
             } catch (error) {
                 console.error('Error getting high scores:', error);
-                document.getElementById('leaderboardContent').innerHTML =
+                leaderboardContent.classList.remove('loaded');
+                leaderboardContent.innerHTML =
                     '<p>Failed to load leaderboard. Please try again later.</p>';
             }
         }
 
-        // Load high scores when the page loads
         document.addEventListener('DOMContentLoaded', displayHighScores);
     </script>
 </body>
+
 </html>

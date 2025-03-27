@@ -106,6 +106,48 @@ body {
     color: #666;
 }
 
+.leaderboard-content {
+    background: rgba(0, 0, 0, 0.8);
+    padding: 20px;
+    border-radius: 10px;
+    height: 400px;
+    overflow-y: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.loading-message {
+    font-style: italic;
+}
+
+.leaderboard-content.loaded {
+    display: block;
+}
+
+
+.leaderboard table {
+    width: 100%;
+    border-collapse: collapse;
+    color: white;
+}
+
+.leaderboard th,
+.leaderboard td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #444;
+}
+
+.leaderboard th {
+    background-color: #222;
+    color: #fff;
+}
+
+.leaderboard tr:nth-child(even) {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
 @media (max-width: 768px) {
     .game-title h1 {
         font-size: 3rem;
