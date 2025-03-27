@@ -460,7 +460,6 @@ document.addEventListener('keydown', (event) => {
     maxHeightDiv.style.setProperty("--hud-display", "flex");
     currentLevelDiv.style.setProperty("--hud-display", "block");
     
-
     // if (event.key === 'g') {
     //     godMode = !godMode;
     //     if (godMode) {
@@ -910,10 +909,7 @@ dialog.querySelector('form').addEventListener('submit', async (e) => {
             // Check for the specific 409 Conflict status
             if (response.status === 409) {
                 const errorData = await response.json();
-                if (errorData.error === 'Already submitted a higher score!') {
-                    // Throw a specific error to be caught below
-                    throw new Error('Already submitted a higher score!'); 
-                }
+                throw new Error(errorData.error, { cause: `higher` });
             }
             // For other errors, throw a generic error
             throw new Error(`Failed to submit score. Status: ${response.status}`);
@@ -928,8 +924,8 @@ dialog.querySelector('form').addEventListener('submit', async (e) => {
         scoreSubmitted = false; // Reset submission state
         console.error('Error submitting score:', error);
         // Check for the specific error message we threw above
-        if (error.message === 'Already submitted a higher score!') {
-            alert('You have already submitted a higher score.');
+        if (error.cause === 'higher') {
+            alert(error.message);
         } else {
             // Handle other errors (network issues, generic server errors, etc.)
             alert('Failed to submit score. Please try again.');

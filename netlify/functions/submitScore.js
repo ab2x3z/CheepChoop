@@ -50,7 +50,7 @@ async function checkPreviousScore(id, score) {
       return { exists: false, higher: false };
     }
 
-    return { exists: true, higher: data.items[0].score < score };
+    return { exists: true, higher: data.items[0].score < score, existingScore: data.items[0].score };
 
   } catch (error) {
     console.error('Error retrieving high scores:', error);
@@ -134,7 +134,7 @@ export const handler = async (event, context) => {
     };
 
     // Check for previous highscore
-    const { exists: alreadyExists, higher: isHigher } = await checkPreviousScore(uniqueUserId, score);
+    const { exists: alreadyExists, higher: isHigher, existingScore: existingScore } = await checkPreviousScore(uniqueUserId, score);
 
     // Get auth token
     const authToken = await getAuthToken();
@@ -172,7 +172,7 @@ export const handler = async (event, context) => {
       // Score exists and is not higher, return a specific status code
       return {
         statusCode: 409, // Conflict status code
-        body: JSON.stringify({ error: 'Already submitted a higher score!' }),
+        body: JSON.stringify({ error: `Already submitted a higher score : ${existingScore}m` }),
         headers: {
           'Content-Type': 'application/json',
           'Cache-Control': 'no-store'
@@ -187,14 +187,6 @@ export const handler = async (event, context) => {
       console.error(`Backend error: ${response.status} and body : ${errorBody}`);
       throw new Error(`Backend error: ${response.status}`);
     }
-
-    // let result;
-    // try {
-    //   result = await response.json();
-    //   console.log('Response parsed successfully:');
-    // } catch (parseError) {
-    //   throw parseError;
-    // }
 
     // Return success
     return {
