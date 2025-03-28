@@ -300,12 +300,23 @@ function createPlatforms(manager, levels) {
         const normal = loadTexture(manager, `assets/platforms/${level.normal}`);
         const displacement = loadTexture(manager, `assets/platforms/${level.displacement}`);
         const roughness = loadTexture(manager, `assets/platforms/${level.roughness}`);
-        const ao = loadTexture(manager, `assets/platforms/${level.ao}`);
+
+        if (level.ao) {
+            const ao = loadTexture(manager, `assets/platforms/${level.ao}`);
+    
+            return new THREE.MeshStandardMaterial({
+                map: texture,
+                normalMap: normal,
+                aoMap: ao,
+                displacementMap: displacement,
+                roughnessMap: roughness,
+                displacementScale: 0
+            });
+        }
 
         return new THREE.MeshStandardMaterial({
             map: texture,
             normalMap: normal,
-            aoMap: ao,
             displacementMap: displacement,
             roughnessMap: roughness,
             displacementScale: 0
