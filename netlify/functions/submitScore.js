@@ -98,7 +98,7 @@ export const handler = async (event, context) => {
     }
 
     // Validate level
-    const validLevels = ['Ground', 'Wood', 'Brick', 'Sand', 'Marble', 'Obsidian', 'Sleep'];
+    const validLevels = ['Ground', 'Wood', 'Brick', 'Sand', 'Marble', 'Obsidian', 'Sleep', '???', 'Trash'];
     if (!validLevels.includes(level)) {
       return {
         statusCode: 400,
