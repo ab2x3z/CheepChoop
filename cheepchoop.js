@@ -967,13 +967,11 @@ dialog.querySelector('form').addEventListener('submit', async (e) => {
 
         // Check if the response status indicates success (2xx)
         if (!response.ok) {
-            // Check for the specific 409 Conflict status
+            const errorData = await response.json();
             if (response.status === 409) {
-                const errorData = await response.json();
                 throw new Error(errorData.error, { cause: `higher` });
             }
-            // For other errors, throw a generic error
-            throw new Error(`Failed to submit score. Status: ${response.status}`);
+            throw new Error(`Failed to submit score. error: ${errorData.error}, status: ${response.status}`);
         }
 
         const result = await response.json();
