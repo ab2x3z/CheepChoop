@@ -11,9 +11,9 @@ const LevelType = {
     SAND: { value: 3, name: 'Sand' },
     MARBLE: { value: 4, name: 'Marble' },
     OBSIDIAN: { value: 5, name: 'Obsidian' },
-    SCIFI: { value: 6, name: 'Sci-Fi' },
-    SLEEP: { value: 7, name: 'Sleep' },
-    NULL: { value: 8, name: '???' },
+    NULL: { value: 6, name: '???' },
+    SCIFI: { value: 7, name: 'Sci-Fi' },
+    SLEEP: { value: 8, name: 'Sleep' },
     TRASH: { value: 9, name: 'Trash' }
 };
 
@@ -69,16 +69,16 @@ const platformLevels = [
         size: 25
     },
     {
+        type: LevelType.NULL,
+        size: 100
+    },
+    {
         type: LevelType.SCIFI,
         model: 'assets/glTFs/roundPlatform/scene.gltf'
     },
     {
         type: LevelType.SLEEP,
         model: 'assets/glTFs/bed/scene.gltf'
-    },
-    {
-        type: LevelType.NULL,
-        size: 100
     },
     {
         type: LevelType.TRASH,
@@ -788,6 +788,13 @@ function move() {
                         }
                         break;
 
+                    case LevelType.NULL:
+                        setLevelText(LevelType.NULL.name);
+                        if (maxLevel.value < LevelType.NULL.value) {
+                            setMaxLevel(LevelType.NULL);
+                        }
+                        break;
+
                     case LevelType.SCIFI:
                         playSound("assets/sounds/se_common_landing_sci-fi.wav");
                         setLevelText(LevelType.SCIFI.name);
@@ -801,13 +808,6 @@ function move() {
                         setLevelText(LevelType.SLEEP.name);
                         if (maxLevel.value < LevelType.SLEEP.value) {
                             setMaxLevel(LevelType.SLEEP);
-                        }
-                        break;
-
-                    case LevelType.NULL:
-                        setLevelText(LevelType.NULL.name);
-                        if (maxLevel.value < LevelType.NULL.value) {
-                            setMaxLevel(LevelType.NULL);
                         }
                         break;
 
