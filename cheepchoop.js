@@ -151,6 +151,102 @@ function playSound(soundPath, volume = 0.2) {
     sound.play().catch(error => console.log("Audio play failed:", error));
 }
 
+function getSpeechAudio(text, voiceName = null, pitch = 1, rate = 1) {
+    const statusElement = document.getElementById('status');
+
+    // --- Core Speech Synthesis Logic ---
+    // 1. Check for browser support
+    if (!('speechSynthesis' in window)) {
+        statusElement.textContent = "Sorry, your browser doesn't support text-to-speech!";
+        alert("Sorry, your browser doesn't support text-to-speech!");
+        return;
+    }
+
+    const synth = window.speechSynthesis;
+
+    // 2. Prevent speaking if already speaking
+    if (synth.speaking) {
+        statusElement.textContent = "Already speaking...";
+        console.warn('SpeechSynthesisUtterance is already speaking.');
+        // Optionally synth.cancel(); here if you want the new request to interrupt
+        return;
+    }
+
+    // 3. Create an utterance instance
+    const utterance = new SpeechSynthesisUtterance(text);
+
+    // 4. Set utterance parameters (approximating "cheerful")
+    utterance.pitch = pitch; // Range 0-2. Higher pitch might sound more cheerful.
+    utterance.rate = rate;   // Range 0.1-10. Controls speed. 1 is default.
+    utterance.volume = 1;    // Range 0-1.
+
+    // 5. Handle events (optional but good practice)
+    utterance.onstart = () => {
+        statusElement.textContent = "Speaking...";
+        console.log("Speech started.");
+    };
+    utterance.onend = () => {
+        statusElement.textContent = "Speech finished.";
+        console.log("Speech finished.");
+    };
+    utterance.onerror = (event) => {
+        statusElement.textContent = `Error during speech: ${event.error}`;
+        console.error("Speech synthesis error:", event.error);
+    };
+
+    // 6. Select a Voice (This is tricky and OS/browser dependent)
+    // Voices load asynchronously, so we need to wait or check.
+    let voices = synth.getVoices();
+
+    const setVoiceAndSpeak = () => {
+        voices = synth.getVoices(); // Refresh list just in case
+        if (voices.length === 0) {
+            console.warn("No voices loaded yet.");
+            statusElement.textContent = "Waiting for voices to load...";
+            // Try again slightly later if voices haven't loaded
+            // This is a common issue, especially on first load.
+            // A more robust solution might involve a Promise or interval.
+            setTimeout(setVoiceAndSpeak, 100); // Retry after 100ms
+            return;
+        }
+        console.log("Available voices:", voices);
+
+        let selectedVoice = null;
+
+        // Try finding a specific voice if requested (e.g., 'Google US English', 'Microsoft David - English (United States)', 'Mozilla')
+        // Note: 'coral' is an OpenAI voice, it won't exist here.
+        // Names vary WILDLY between OS (Windows, macOS, Linux) and Browsers (Chrome, Firefox, Edge, Safari)
+        if (voiceName) {
+            selectedVoice = voices.find(voice => voice.name.toLowerCase().includes(voiceName.toLowerCase()));
+        }
+
+        // Fallback: Find the first available English voice, or just the very first voice
+        if (!selectedVoice) {
+            selectedVoice = voices.find(voice => voice.lang.startsWith('en')) || voices[0];
+        }
+
+        if (selectedVoice) {
+            utterance.voice = selectedVoice;
+            console.log(`Using voice: ${selectedVoice.name} (${selectedVoice.lang})`);
+        } else {
+            console.warn("Could not find a suitable voice. Using default.");
+            statusElement.textContent = "Could not find a suitable voice. Using default.";
+        }
+
+        // 7. Speak the utterance
+        synth.speak(utterance);
+    };
+
+    // Voices might not be loaded immediately.
+    if (voices.length !== 0) {
+        setVoiceAndSpeak();
+    } else {
+        // Listen for the voices to change/load
+        synth.onvoiceschanged = setVoiceAndSpeak;
+    }
+}
+getSpeechAudio("Today is a wonderful day to build something people love!", null, 1.2, 1.0);
+
 // ******************************  Create Player  ******************************
 const geometrySphere = new THREE.SphereGeometry(sphereRadius, 32, 32);
 const rockMap = loadTexture(manager, 'assets/player/ChristmasTreeOrnament017_1K-JPG_Color.jpg');
@@ -301,7 +397,7 @@ function createPlatforms(manager, levels) {
 
         if (level.ao) {
             const ao = loadTexture(manager, `assets/platforms/${level.ao}`);
-    
+
             return new THREE.MeshStandardMaterial({
                 map: texture,
                 normalMap: normal,
@@ -490,7 +586,7 @@ document.addEventListener('keydown', (event) => {
     currentHeightDiv.style.setProperty("--hud-display", "flex");
     maxHeightDiv.style.setProperty("--hud-display", "flex");
     currentLevelDiv.style.setProperty("--hud-display", "block");
-    
+
     if (event.key === 'g' && currentEnv.env === 'dev') {
         godMode = !godMode;
         if (godMode) {
@@ -632,7 +728,6 @@ function pointerLockChange() {
         togglePauseMenu(true);
     }
 }
-
 
 // Mouse movement handler
 function onMouseMove(event) {
