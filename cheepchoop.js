@@ -151,6 +151,32 @@ function playSound(soundPath, volume = 0.2) {
     sound.play().catch(error => console.log("Audio play failed:", error));
 }
 
+async function getSpeechText() {
+    console.log(`getting speech text`)
+    try {
+        const response = await fetch('/.netlify/functions/getGeminiResponse', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                geminiModel: geminiModel,
+                input: 'Congradulate sarcasticlly a player for reaching a new level. Only respond in a single sentence.'
+            }),
+            credentials: 'same-origin'
+        });
+
+        if (!response.ok) throw new Error('');
+
+        const result = await response.json();
+        console.log(`speech to play : ${result.candidates[0].content.parts[0].text}`)
+        getSpeechAudio(result.candidates[0].content.parts[0].text, null, 1.2, 1.0);
+
+    } catch (error) {
+
+    }
+}
+
 function getSpeechAudio(text, voiceName = null, pitch = 1, rate = 1) {
     const statusElement = document.getElementById('status');
 
@@ -245,7 +271,7 @@ function getSpeechAudio(text, voiceName = null, pitch = 1, rate = 1) {
         synth.onvoiceschanged = setVoiceAndSpeak;
     }
 }
-getSpeechAudio("Today is a wonderful day to build something people love!", null, 1.2, 1.0);
+getSpeechText();
 
 // ******************************  Create Player  ******************************
 const geometrySphere = new THREE.SphereGeometry(sphereRadius, 32, 32);
