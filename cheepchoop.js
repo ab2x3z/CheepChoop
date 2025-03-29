@@ -287,8 +287,6 @@ fontLoader.load('assets/fonts/helvetiker_regular.typeface.json', function (font)
     scene.add(moveTextMesh, jumpTextMesh, lookTextMesh);
 });
 // ******************************  Create Platforms  ******************************
-const loader = new GLTFLoader(manager);
-
 function createPlatforms(manager, levels) {
     const platforms = [];
     let lastPlatformPosition = new THREE.Vector3(0, 0, 0);
@@ -481,6 +479,9 @@ const keysPressed = {};
 let isDialogOpen = false;
 let previousLevel;
 
+const currentEnvRequest = await fetch('/.netlify/functions/getEnvironment');
+const currentEnv = await currentEnvRequest.json();
+
 document.addEventListener('keydown', (event) => {
     if (isDialogOpen) return; // Ignore input if dialog is open
     keysPressed[event.key.toLowerCase()] = true;
@@ -489,16 +490,16 @@ document.addEventListener('keydown', (event) => {
     currentHeightDiv.style.setProperty("--hud-display", "flex");
     maxHeightDiv.style.setProperty("--hud-display", "flex");
     currentLevelDiv.style.setProperty("--hud-display", "block");
-
-    // if (event.key === 'g') {
-    //     godMode = !godMode;
-    //     if (godMode) {
-    //         previousLevel = document.getElementById('currentLevel').textContent;
-    //         document.getElementById('currentLevel').textContent = 'GodMode';
-    //     } else {
-    //         document.getElementById('currentLevel').textContent = previousLevel;
-    //     }
-    // }
+    
+    if (event.key === 'g' && currentEnv.env === 'dev') {
+        godMode = !godMode;
+        if (godMode) {
+            previousLevel = document.getElementById('currentLevel').textContent;
+            document.getElementById('currentLevel').textContent = 'GodMode';
+        } else {
+            document.getElementById('currentLevel').textContent = previousLevel;
+        }
+    }
 });
 document.addEventListener('keyup', (event) => {
     if (isDialogOpen) return; // Ignore input if dialog is open
