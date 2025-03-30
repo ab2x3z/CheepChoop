@@ -152,8 +152,10 @@ function playSound(soundPath, volume = 0.2) {
 }
 
 const geminiModel = "gemini-2.0-flash-lite";
+const prompt = `You are the sarcastic narrator of CheepChoop, a frustratingly addictive web platformer where players must climb to ever-increasing heights. The game is visually simple, but notoriously difficult; one wrong move sends players plummeting back to the very beginning. When the player reaches a new level, craft a short, sarcastic congratulatory message that highlights both the level number and the height reached. If the scenario includes the phrase '[NUMBER OF FALLS: X]' (where X is a number) in their prompt, include the number of falls in your sarcastic congratulations. Your message should never be more than two sentences long. Be creatively sarcastic, using humor that is playfully condescending.`;
 
-async function getSpeechText() {
+async function congratulate(level, heigh) {
+    const falls = felled > 1 ? `[NUMBER OF FALLS: ${felled}]` : ``;
     try {
         const response = await fetch('/.netlify/functions/getGeminiResponse', {
             method: 'POST',
@@ -162,7 +164,7 @@ async function getSpeechText() {
             },
             body: JSON.stringify({
                 geminiModel: geminiModel,
-                input: 'Congradulate sarcasticlly a player for reaching a new level. Only respond in a single sentence.'
+                input: `${prompt} Now, respond to the following scenario: The player has just reached the level ${level} at a height of ${heigh} meters. ${falls}`
             }),
             credentials: 'same-origin'
         });
@@ -244,7 +246,6 @@ function getSpeechAudio(text, voiceName = null, pitch = 1, rate = 1) {
         synth.onvoiceschanged = setVoiceAndSpeak;
     }
 }
-getSpeechText();
 
 // ******************************  Create Player  ******************************
 const geometrySphere = new THREE.SphereGeometry(sphereRadius, 32, 32);
@@ -614,12 +615,14 @@ let jumpVelocity = 0;
 let momentum = new THREE.Vector3(0, 0, 0);
 let maxHeight = 0;
 let maxLevel = LevelType.GROUND;
+let playerCurrentLevel = LevelType.GROUND;
 let lastHeight;
 let fallDistance;
 let isFalling;
 let godMode = false;
 const upVector = new THREE.Vector3(0, 1, 0);
 let isLoading = true;
+let felled = 0;
 
 // Collision detection function (Sphere - Box)
 function checkSphereBoxCollision(sphere, box) {
@@ -841,6 +844,9 @@ function move() {
                     case LevelType.WOOD:
                         playSound("assets/sounds/se_common_landing_wood.wav");
                         setLevelText(LevelType.WOOD.name);
+                        if (playerCurrentLevel !== LevelType.WOOD.name) {
+                            playerCurrentLevel = LevelType.WOOD.name;
+                        }
                         if (maxLevel.value < LevelType.WOOD.value) {
                             setMaxLevel(LevelType.WOOD);
                         }
@@ -849,6 +855,11 @@ function move() {
                     case LevelType.BRICK:
                         playSound("assets/sounds/se_common_landing_brick.wav");
                         setLevelText(LevelType.BRICK.name);
+                        console.log(playerCurrentLevel);
+                    
+                        if (playerCurrentLevel !== LevelType.BRICK.name) {
+                            playerCurrentLevel = LevelType.BRICK.name;
+                        }
                         if (maxLevel.value < LevelType.BRICK.value) {
                             setMaxLevel(LevelType.BRICK);
                         }
@@ -857,6 +868,9 @@ function move() {
                     case LevelType.SAND:
                         playSound("assets/sounds/se_common_landing_sand.wav");
                         setLevelText(LevelType.SAND.name);
+                        if (playerCurrentLevel !== LevelType.SAND.name) {
+                            playerCurrentLevel = LevelType.SAND.name;
+                        }
                         if (maxLevel.value < LevelType.SAND.value) {
                             setMaxLevel(LevelType.SAND);
                         }
@@ -865,6 +879,10 @@ function move() {
                     case LevelType.MARBLE:
                         playSound("assets/sounds/se_common_landing_marble.wav");
                         setLevelText(LevelType.MARBLE.name);
+                        if (playerCurrentLevel !== LevelType.MARBLE.name) {
+                            playerCurrentLevel = LevelType.MARBLE.name;
+                            congratulate(LevelType.MARBLE.name, Math.round(sphere.position.y / 10));
+                        }
                         if (maxLevel.value < LevelType.MARBLE.value) {
                             setMaxLevel(LevelType.MARBLE);
                         }
@@ -873,6 +891,10 @@ function move() {
                     case LevelType.OBSIDIAN:
                         playSound("assets/sounds/se_common_landing_obsidian.wav");
                         setLevelText(LevelType.OBSIDIAN.name);
+                        if (playerCurrentLevel !== LevelType.OBSIDIAN.name) {
+                            playerCurrentLevel = LevelType.OBSIDIAN.name;
+                            congratulate(LevelType.OBSIDIAN.name, Math.round(sphere.position.y / 10));
+                        }
                         if (maxLevel.value < LevelType.OBSIDIAN.value) {
                             setMaxLevel(LevelType.OBSIDIAN);
                         }
@@ -880,6 +902,10 @@ function move() {
 
                     case LevelType.NULL:
                         setLevelText(LevelType.NULL.name);
+                        if (playerCurrentLevel !== LevelType.NULL.name) {
+                            playerCurrentLevel = LevelType.NULL.name;
+                            congratulate(LevelType.NULL.name, Math.round(sphere.position.y / 10));
+                        }
                         if (maxLevel.value < LevelType.NULL.value) {
                             setMaxLevel(LevelType.NULL);
                         }
@@ -888,6 +914,10 @@ function move() {
                     case LevelType.SCIFI:
                         playSound("assets/sounds/se_common_landing_sci-fi.wav");
                         setLevelText(LevelType.SCIFI.name);
+                        if (playerCurrentLevel !== LevelType.SCIFI.name) {
+                            playerCurrentLevel = LevelType.SCIFI.name;
+                            congratulate(LevelType.SCIFI.name, Math.round(sphere.position.y / 10));
+                        }
                         if (maxLevel.value < LevelType.SCIFI.value) {
                             setMaxLevel(LevelType.SCIFI);
                         }
@@ -896,6 +926,10 @@ function move() {
                     case LevelType.SLEEP:
                         playSound("assets/sounds/se_common_landing_bed.wav");
                         setLevelText(LevelType.SLEEP.name);
+                        if (playerCurrentLevel !== LevelType.SLEEP.name) {
+                            playerCurrentLevel = LevelType.SLEEP.name;
+                            congratulate(LevelType.SLEEP.name, Math.round(sphere.position.y / 10));
+                        }
                         if (maxLevel.value < LevelType.SLEEP.value) {
                             setMaxLevel(LevelType.SLEEP);
                         }
@@ -904,6 +938,10 @@ function move() {
                     case LevelType.TRASH:
                         playSound("assets/sounds/se_common_landing_trash.wav");
                         setLevelText(LevelType.TRASH.name);
+                        if (playerCurrentLevel !== LevelType.TRASH.name) {
+                            playerCurrentLevel = LevelType.TRASH.name;
+                            congratulate(LevelType.TRASH.name, Math.round(sphere.position.y / 10));
+                        }
                         if (maxLevel.value < LevelType.TRASH.value) {
                             setMaxLevel(LevelType.TRASH);
                         }
@@ -947,6 +985,7 @@ function move() {
         if (fallDistance > 100 && !isFalling && sphere.position.y > 700) {
             playSound("assets/sounds/se_common_oh-no.wav");
             isFalling = true;
+            felled++;
             setTimeout(() => {
                 setupBackgroundMusic('Past Sadness.mp3');
                 if (!noMusic) {
