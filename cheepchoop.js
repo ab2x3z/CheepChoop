@@ -156,6 +156,13 @@ const prompt = `You are the sarcastic narrator of CheepChoop, a frustratingly ad
 
 async function congratulate(level, heigh) {
     const falls = felled > 1 ? `[NUMBER OF FALLS: ${felled}]` : ``;
+    let scenario = '';
+    if (level !== '???'){
+        scenario = `Now, respond to the following scenario: The player has just reached the level ${level} at a height of ${heigh} meters. ${falls}`;
+    } else {
+        scenario = `Now, respond to the following scenario: The player has just reached the secret NULL level its invisible and therefore, hard to find (really not). ${falls}`;
+    }
+    
     try {
         const response = await fetch('/.netlify/functions/getGeminiResponse', {
             method: 'POST',
@@ -164,7 +171,7 @@ async function congratulate(level, heigh) {
             },
             body: JSON.stringify({
                 geminiModel: geminiModel,
-                input: `${prompt} Now, respond to the following scenario: The player has just reached the level ${level} at a height of ${heigh} meters. ${falls}`
+                input: `${prompt} ${scenario}`
             }),
             credentials: 'same-origin'
         });
@@ -870,6 +877,7 @@ function move() {
                         setLevelText(LevelType.SAND.name);
                         if (playerCurrentLevel !== LevelType.SAND.name) {
                             playerCurrentLevel = LevelType.SAND.name;
+                            congratulate(LevelType.SAND.name, 146);
                         }
                         if (maxLevel.value < LevelType.SAND.value) {
                             setMaxLevel(LevelType.SAND);
@@ -881,7 +889,6 @@ function move() {
                         setLevelText(LevelType.MARBLE.name);
                         if (playerCurrentLevel !== LevelType.MARBLE.name) {
                             playerCurrentLevel = LevelType.MARBLE.name;
-                            congratulate(LevelType.MARBLE.name, Math.round(sphere.position.y / 10));
                         }
                         if (maxLevel.value < LevelType.MARBLE.value) {
                             setMaxLevel(LevelType.MARBLE);
@@ -893,7 +900,7 @@ function move() {
                         setLevelText(LevelType.OBSIDIAN.name);
                         if (playerCurrentLevel !== LevelType.OBSIDIAN.name) {
                             playerCurrentLevel = LevelType.OBSIDIAN.name;
-                            congratulate(LevelType.OBSIDIAN.name, Math.round(sphere.position.y / 10));
+                            congratulate(LevelType.OBSIDIAN.name, 284);
                         }
                         if (maxLevel.value < LevelType.OBSIDIAN.value) {
                             setMaxLevel(LevelType.OBSIDIAN);
@@ -904,7 +911,7 @@ function move() {
                         setLevelText(LevelType.NULL.name);
                         if (playerCurrentLevel !== LevelType.NULL.name) {
                             playerCurrentLevel = LevelType.NULL.name;
-                            congratulate(LevelType.NULL.name, Math.round(sphere.position.y / 10));
+                            congratulate(LevelType.NULL.name);
                         }
                         if (maxLevel.value < LevelType.NULL.value) {
                             setMaxLevel(LevelType.NULL);
@@ -916,7 +923,6 @@ function move() {
                         setLevelText(LevelType.SCIFI.name);
                         if (playerCurrentLevel !== LevelType.SCIFI.name) {
                             playerCurrentLevel = LevelType.SCIFI.name;
-                            congratulate(LevelType.SCIFI.name, Math.round(sphere.position.y / 10));
                         }
                         if (maxLevel.value < LevelType.SCIFI.value) {
                             setMaxLevel(LevelType.SCIFI);
@@ -928,7 +934,6 @@ function move() {
                         setLevelText(LevelType.SLEEP.name);
                         if (playerCurrentLevel !== LevelType.SLEEP.name) {
                             playerCurrentLevel = LevelType.SLEEP.name;
-                            congratulate(LevelType.SLEEP.name, Math.round(sphere.position.y / 10));
                         }
                         if (maxLevel.value < LevelType.SLEEP.value) {
                             setMaxLevel(LevelType.SLEEP);
@@ -940,7 +945,7 @@ function move() {
                         setLevelText(LevelType.TRASH.name);
                         if (playerCurrentLevel !== LevelType.TRASH.name) {
                             playerCurrentLevel = LevelType.TRASH.name;
-                            congratulate(LevelType.TRASH.name, Math.round(sphere.position.y / 10));
+                            congratulate(LevelType.TRASH.name, 560);
                         }
                         if (maxLevel.value < LevelType.TRASH.value) {
                             setMaxLevel(LevelType.TRASH);
