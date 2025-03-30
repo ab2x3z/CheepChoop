@@ -152,22 +152,16 @@ function playSound(soundPath, volume = 0.2) {
 }
 
 const geminiModel = "gemini-2.0-flash-lite";
-const prompt = `You are a sarcastic narrator of CheepChoop, a brutally difficult web platformer. Players climb to increasingly absurd heights, often failing spectacularly and returning to the start.
 
-Task: Upon reaching a new level, generate a single-sentence, sarcastically congratulatory message. The message must:
-- Include the level name.
-- Use playful, condescending humor.
-- If and only if the prompt includes the phrase "[ALREADY_REACHED]", acknowledge the player has reached the level before. Do not mention "[ALREADY_REACHED]" literally.
-- If and only if the prompt includes the phrase "[NUMBER OF FALLS: X]", Incorporate the number of falls (X) into the sarcastic congratulations. Do not mention "[NUMBER OF FALLS: X]" literally.`;
-
-async function congratulate(level, heigh) {
+async function congratulate(level) {
     const reached = maxLevel.value >= level.value ? `[ALREADY_REACHED]` : ``;
     const falls = felled > 0 ? `[NUMBER OF FALLS: ${felled}]` : ``;
-    let scenario = '';
+    let prompt = '';
+    
     if (level.name !== '???'){
-        scenario = `Reached the level ${level.name}. ${reached} ${falls}`;
+        prompt = `Reached the level ${level.name}. ${reached} ${falls}`;
     } else {
-        scenario = `Reached the secret NULL level its invisible and therefore, hard to find (really not). ${reached} ${falls}`;
+        prompt = `Reached the secret NULL level its invisible and therefore, hard to find (really not). ${reached} ${falls}`;
     }
     
     try {
@@ -178,7 +172,7 @@ async function congratulate(level, heigh) {
             },
             body: JSON.stringify({
                 geminiModel: geminiModel,
-                input: `${prompt} ${scenario}`
+                input: prompt
             }),
             credentials: 'same-origin'
         });
@@ -884,7 +878,7 @@ function move() {
                         setLevelText(LevelType.SAND.name);
                         if (playerCurrentLevel !== LevelType.SAND.name) {
                             playerCurrentLevel = LevelType.SAND.name;
-                            congratulate(LevelType.SAND, 146);
+                            congratulate(LevelType.SAND);
                         }
                         if (maxLevel.value < LevelType.SAND.value) {
                             setMaxLevel(LevelType.SAND);
@@ -907,7 +901,7 @@ function move() {
                         setLevelText(LevelType.OBSIDIAN.name);
                         if (playerCurrentLevel !== LevelType.OBSIDIAN.name) {
                             playerCurrentLevel = LevelType.OBSIDIAN.name;
-                            congratulate(LevelType.OBSIDIAN, 284);
+                            congratulate(LevelType.OBSIDIAN);
                         }
                         if (maxLevel.value < LevelType.OBSIDIAN.value) {
                             setMaxLevel(LevelType.OBSIDIAN);
@@ -952,7 +946,7 @@ function move() {
                         setLevelText(LevelType.TRASH.name);
                         if (playerCurrentLevel !== LevelType.TRASH.name) {
                             playerCurrentLevel = LevelType.TRASH.name;
-                            congratulate(LevelType.TRASH, 560);
+                            congratulate(LevelType.TRASH);
                         }
                         if (maxLevel.value < LevelType.TRASH.value) {
                             setMaxLevel(LevelType.TRASH);
