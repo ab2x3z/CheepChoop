@@ -152,15 +152,22 @@ function playSound(soundPath, volume = 0.2) {
 }
 
 const geminiModel = "gemini-2.0-flash-lite";
-const prompt = `You are the sarcastic narrator of CheepChoop, a frustratingly addictive web platformer where players must climb to ever-increasing heights. The game is visually simple, but notoriously difficult; one wrong move sends players plummeting back to the very beginning. When the player reaches a new level, craft a short, sarcastic congratulatory message that highlights both the level number and the height reached. If the scenario includes the phrase '[NUMBER OF FALLS: X]' (where X is a number) in their prompt, include the number of falls in your sarcastic congratulations. Your message should never be more than two sentences long. Be creatively sarcastic, using humor that is playfully condescending.`;
+const prompt = `You are a sarcastic narrator of CheepChoop, a brutally difficult web platformer. Players climb to increasingly absurd heights, often failing spectacularly and returning to the start.
+
+Task: Upon reaching a new level, generate a single-sentence, sarcastically congratulatory message. The message must:
+- Include the level name.
+- Use playful, condescending humor.
+- If and only if the prompt includes the phrase "[ALREADY_REACHED]", acknowledge the player has reached the level before. Do not mention "[ALREADY_REACHED]" literally.
+- If and only if the prompt includes the phrase "[NUMBER OF FALLS: X]", Incorporate the number of falls (X) into the sarcastic congratulations. Do not mention "[NUMBER OF FALLS: X]" literally.`;
 
 async function congratulate(level, heigh) {
-    const falls = felled > 1 ? `[NUMBER OF FALLS: ${felled}]` : ``;
+    const reached = maxLevel.value >= level.value ? `[ALREADY_REACHED]` : ``;
+    const falls = felled > 0 ? `[NUMBER OF FALLS: ${felled}]` : ``;
     let scenario = '';
-    if (level !== '???'){
-        scenario = `Now, respond to the following scenario: The player has just reached the level ${level} at a height of ${heigh} meters. ${falls}`;
+    if (level.name !== '???'){
+        scenario = `Reached the level ${level.name}. ${reached} ${falls}`;
     } else {
-        scenario = `Now, respond to the following scenario: The player has just reached the secret NULL level its invisible and therefore, hard to find (really not). ${falls}`;
+        scenario = `Reached the secret NULL level its invisible and therefore, hard to find (really not). ${reached} ${falls}`;
     }
     
     try {
@@ -591,15 +598,15 @@ document.addEventListener('keydown', (event) => {
     maxHeightDiv.style.setProperty("--hud-display", "flex");
     currentLevelDiv.style.setProperty("--hud-display", "block");
 
-    // if (event.key === 'g') {
-    //     godMode = !godMode;
-    //     if (godMode) {
-    //         previousLevel = document.getElementById('currentLevel').textContent;
-    //         document.getElementById('currentLevel').textContent = 'GodMode';
-    //     } else {
-    //         document.getElementById('currentLevel').textContent = previousLevel;
-    //     }
-    // }
+    if (event.key === 'g') {
+        godMode = !godMode;
+        if (godMode) {
+            previousLevel = document.getElementById('currentLevel').textContent;
+            document.getElementById('currentLevel').textContent = 'GodMode';
+        } else {
+            document.getElementById('currentLevel').textContent = previousLevel;
+        }
+    }
 });
 document.addEventListener('keyup', (event) => {
     if (isDialogOpen) return; // Ignore input if dialog is open
@@ -877,7 +884,7 @@ function move() {
                         setLevelText(LevelType.SAND.name);
                         if (playerCurrentLevel !== LevelType.SAND.name) {
                             playerCurrentLevel = LevelType.SAND.name;
-                            congratulate(LevelType.SAND.name, 146);
+                            congratulate(LevelType.SAND, 146);
                         }
                         if (maxLevel.value < LevelType.SAND.value) {
                             setMaxLevel(LevelType.SAND);
@@ -900,7 +907,7 @@ function move() {
                         setLevelText(LevelType.OBSIDIAN.name);
                         if (playerCurrentLevel !== LevelType.OBSIDIAN.name) {
                             playerCurrentLevel = LevelType.OBSIDIAN.name;
-                            congratulate(LevelType.OBSIDIAN.name, 284);
+                            congratulate(LevelType.OBSIDIAN, 284);
                         }
                         if (maxLevel.value < LevelType.OBSIDIAN.value) {
                             setMaxLevel(LevelType.OBSIDIAN);
@@ -911,7 +918,7 @@ function move() {
                         setLevelText(LevelType.NULL.name);
                         if (playerCurrentLevel !== LevelType.NULL.name) {
                             playerCurrentLevel = LevelType.NULL.name;
-                            congratulate(LevelType.NULL.name);
+                            congratulate(LevelType.NULL);
                         }
                         if (maxLevel.value < LevelType.NULL.value) {
                             setMaxLevel(LevelType.NULL);
@@ -945,7 +952,7 @@ function move() {
                         setLevelText(LevelType.TRASH.name);
                         if (playerCurrentLevel !== LevelType.TRASH.name) {
                             playerCurrentLevel = LevelType.TRASH.name;
-                            congratulate(LevelType.TRASH.name, 560);
+                            congratulate(LevelType.TRASH, 560);
                         }
                         if (maxLevel.value < LevelType.TRASH.value) {
                             setMaxLevel(LevelType.TRASH);
