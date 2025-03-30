@@ -151,8 +151,9 @@ function playSound(soundPath, volume = 0.2) {
     sound.play().catch(error => console.log("Audio play failed:", error));
 }
 
+const geminiModel = "gemini-2.0-flash-lite";
+
 async function getSpeechText() {
-    console.log(`getting speech text`)
     try {
         const response = await fetch('/.netlify/functions/getGeminiResponse', {
             method: 'POST',
@@ -169,7 +170,6 @@ async function getSpeechText() {
         if (!response.ok) throw new Error('');
 
         const result = await response.json();
-        console.log(`speech to play : ${result.candidates[0].content.parts[0].text}`)
         getSpeechAudio(result.candidates[0].content.parts[0].text, null, 1.2, 1.0);
 
     } catch (error) {
@@ -180,8 +180,7 @@ async function getSpeechText() {
 function getSpeechAudio(text, voiceName = null, pitch = 1, rate = 1) {
     const statusElement = document.getElementById('status');
 
-    // --- Core Speech Synthesis Logic ---
-    // 1. Check for browser support
+    // Check for browser support
     if (!('speechSynthesis' in window)) {
         statusElement.textContent = "Sorry, your browser doesn't support text-to-speech!";
         alert("Sorry, your browser doesn't support text-to-speech!");
@@ -190,38 +189,21 @@ function getSpeechAudio(text, voiceName = null, pitch = 1, rate = 1) {
 
     const synth = window.speechSynthesis;
 
-    // 2. Prevent speaking if already speaking
     if (synth.speaking) {
         statusElement.textContent = "Already speaking...";
         console.warn('SpeechSynthesisUtterance is already speaking.');
-        // Optionally synth.cancel(); here if you want the new request to interrupt
+        synth.cancel();
         return;
     }
 
-    // 3. Create an utterance instance
     const utterance = new SpeechSynthesisUtterance(text);
 
-    // 4. Set utterance parameters (approximating "cheerful")
+    // Set utterance parameters
     utterance.pitch = pitch; // Range 0-2. Higher pitch might sound more cheerful.
     utterance.rate = rate;   // Range 0.1-10. Controls speed. 1 is default.
     utterance.volume = 1;    // Range 0-1.
 
-    // 5. Handle events (optional but good practice)
-    utterance.onstart = () => {
-        statusElement.textContent = "Speaking...";
-        console.log("Speech started.");
-    };
-    utterance.onend = () => {
-        statusElement.textContent = "Speech finished.";
-        console.log("Speech finished.");
-    };
-    utterance.onerror = (event) => {
-        statusElement.textContent = `Error during speech: ${event.error}`;
-        console.error("Speech synthesis error:", event.error);
-    };
-
-    // 6. Select a Voice (This is tricky and OS/browser dependent)
-    // Voices load asynchronously, so we need to wait or check.
+    // Select a Voice (This is tricky and OS/browser dependent)
     let voices = synth.getVoices();
 
     const setVoiceAndSpeak = () => {
@@ -229,22 +211,14 @@ function getSpeechAudio(text, voiceName = null, pitch = 1, rate = 1) {
         if (voices.length === 0) {
             console.warn("No voices loaded yet.");
             statusElement.textContent = "Waiting for voices to load...";
-            // Try again slightly later if voices haven't loaded
-            // This is a common issue, especially on first load.
-            // A more robust solution might involve a Promise or interval.
             setTimeout(setVoiceAndSpeak, 100); // Retry after 100ms
             return;
         }
-        console.log("Available voices:", voices);
 
         let selectedVoice = null;
 
-        // Try finding a specific voice if requested (e.g., 'Google US English', 'Microsoft David - English (United States)', 'Mozilla')
-        // Note: 'coral' is an OpenAI voice, it won't exist here.
-        // Names vary WILDLY between OS (Windows, macOS, Linux) and Browsers (Chrome, Firefox, Edge, Safari)
-        if (voiceName) {
-            selectedVoice = voices.find(voice => voice.name.toLowerCase().includes(voiceName.toLowerCase()));
-        }
+        const enVoices = voices.filter(voice => voice.lang.startsWith('en'));
+        selectedVoice = enVoices[Math.floor(Math.random() * enVoices.length)];
 
         // Fallback: Find the first available English voice, or just the very first voice
         if (!selectedVoice) {
@@ -259,7 +233,6 @@ function getSpeechAudio(text, voiceName = null, pitch = 1, rate = 1) {
             statusElement.textContent = "Could not find a suitable voice. Using default.";
         }
 
-        // 7. Speak the utterance
         synth.speak(utterance);
     };
 
@@ -601,9 +574,6 @@ const keysPressed = {};
 let isDialogOpen = false;
 let previousLevel;
 
-const currentEnvRequest = await fetch('/.netlify/functions/getEnvironment');
-const currentEnv = await currentEnvRequest.json();
-
 document.addEventListener('keydown', (event) => {
     if (isDialogOpen) return; // Ignore input if dialog is open
     keysPressed[event.key.toLowerCase()] = true;
@@ -613,7 +583,7 @@ document.addEventListener('keydown', (event) => {
     maxHeightDiv.style.setProperty("--hud-display", "flex");
     currentLevelDiv.style.setProperty("--hud-display", "block");
 
-    if (event.key === 'g' && currentEnv.env === 'dev') {
+    if (event.key === 'g') {
         godMode = !godMode;
         if (godMode) {
             previousLevel = document.getElementById('currentLevel').textContent;
@@ -733,8 +703,6 @@ let pitch = 0;
 function lockPointer() {
     const canvas = renderer.domElement;
     canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock;
-
-    console.log(canvas.requestPointerLock);
 
     if (canvas.requestPointerLock) {
         canvas.requestPointerLock();
