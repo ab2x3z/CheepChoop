@@ -17,6 +17,7 @@ const LevelType = {
     TRASH: { value: 9, name: 'Trash' }
 };
 
+const geminiModel = "gemini-2.0-flash-lite";
 const RepeatFactor = 100;
 const gravity = -0.4;
 const walkSpeed = 1;
@@ -151,43 +152,7 @@ function playSound(soundPath, volume = 0.2) {
     sound.play().catch(error => console.log("Audio play failed:", error));
 }
 
-const geminiModel = "gemini-2.0-flash-lite";
-
-async function congratulate(level) {
-    const reached = maxLevel.value >= level.value ? `[ALREADY_REACHED]` : ``;
-    const falls = felled > 0 ? `[NUMBER OF FALLS: ${felled}]` : ``;
-    let prompt = '';
-
-    if (level.name !== '???'){
-        prompt = `Reached the level ${level.name}. ${reached} ${falls}`;
-    } else {
-        prompt = `Reached the secret NULL level its invisible and therefore, hard to find (really not). ${reached} ${falls}`;
-    }
-    
-    try {
-        const response = await fetch('/.netlify/functions/getGeminiResponse', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                geminiModel: geminiModel,
-                input: prompt
-            }),
-            credentials: 'same-origin'
-        });
-
-        if (!response.ok) throw new Error('');
-
-        const result = await response.json();
-        getSpeechAudio(result.candidates[0].content.parts[0].text, null, 1.2, 1.0);
-
-    } catch (error) {
-
-    }
-}
-
-function getSpeechAudio(text, voiceName = null, pitch = 1, rate = 1) {
+function getSpeechAudio(text) {
     const statusElement = document.getElementById('status');
 
     // Check for browser support
@@ -209,8 +174,8 @@ function getSpeechAudio(text, voiceName = null, pitch = 1, rate = 1) {
     const utterance = new SpeechSynthesisUtterance(text);
 
     // Set utterance parameters
-    utterance.pitch = pitch; // Range 0-2. Higher pitch might sound more cheerful.
-    utterance.rate = rate;   // Range 0.1-10. Controls speed. 1 is default.
+    utterance.pitch = 1; // Range 0-2. Higher pitch might sound more cheerful.
+    utterance.rate = 1;   // Range 0.1-10. Controls speed. 1 is default.
     utterance.volume = 1;    // Range 0-1.
 
     // Select a Voice (This is tricky and OS/browser dependent)
@@ -228,7 +193,7 @@ function getSpeechAudio(text, voiceName = null, pitch = 1, rate = 1) {
         let selectedVoice = null;
 
         const enVoices = voices.filter(voice => voice.lang.startsWith('en'));
-        selectedVoice = enVoices[Math.floor(Math.random() * enVoices.length)];
+        selectedVoice = enVoices[Math.floor(Math.random() * enVoices.length)]; // Get a random voice
 
         // Fallback: Find the first available English voice, or just the very first voice
         if (!selectedVoice) {
@@ -252,6 +217,77 @@ function getSpeechAudio(text, voiceName = null, pitch = 1, rate = 1) {
     } else {
         // Listen for the voices to change/load
         synth.onvoiceschanged = setVoiceAndSpeak;
+    }
+}
+
+async function congratulate(level) {
+    const reached = maxLevel.value >= level.value ? `[ALREADY_REACHED]` : ``;
+    const falls = felled > 0 ? `[NUMBER OF FALLS: ${felled}]` : ``;
+    const sysPrompt = `I am a sarcastic narrator of CheepChoop, a brutally difficult web platformer. Players climb to increasingly absurd heights, often failing spectacularly and returning to the start.
+
+    Task: Upon reaching a new level, I will generate a single-sentence, sarcastically congratulatory message. The message must:
+    - Include the level name.
+    - Use playful, condescending humor.
+    - If and only if the prompt includes the phrase "[ALREADY_REACHED]", acknowledge the player has reached the level before. Do not mention "[ALREADY_REACHED]" literally.
+    - If and only if the prompt includes the phrase "[NUMBER OF FALLS: X]", Incorporate the number of falls (X) into the sarcastic congratulations. Do not mention "[NUMBER OF FALLS: X]" literally.`;
+    let prompt = '';
+
+    if (level.name === 'Obsidian') {
+        prompt = `Reached the ABSOLUTE LAST LEVEL, Obsidian. Its platform are really small and its defenitively the last level. ${reached} ${falls}`;
+    } else if (level.name === '???') {
+        prompt = `Reached the secret NULL level its invisible and therefore, hard to find (really not). ${reached} ${falls}`;
+    } else {
+        prompt = `Reached the level ${level.name}. ${reached} ${falls}`;
+    }
+
+    try {
+        const response = await fetch('/.netlify/functions/getGeminiResponse', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                geminiModel: geminiModel,
+                systemPrompt: sysPrompt,
+                input: prompt
+            }),
+            credentials: 'same-origin'
+        });
+
+        if (!response.ok) throw new Error('');
+
+        const result = await response.json();
+        getSpeechAudio(result.candidates[0].content.parts[0].text);
+
+    } catch (error) {
+
+    }
+}
+
+async function getIntroduction() {
+    let prompt = 'You are a sarcastic narrator introducing CheepChoop, a brutally difficult web platformer. Players endure a climb to absurd heights, repeatedly failing and returning to the start.  There are five levels, each constructed of increasingly smaller platforms: WOOD, BRICK, SAND, MARBLE, and OBSIDIAN.  (Hint: When players reach the final Obsidian platform, they will notice distant objects still above them, suggesting the climb continues...) Deliver a concise introduction, two sentences max.';
+
+    try {
+        const response = await fetch('/.netlify/functions/getGeminiResponse', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                geminiModel: geminiModel,
+                systemPrompt: 'I am a sarcastic narrator introducing CheepChoop',
+                input: prompt
+            }),
+            credentials: 'same-origin'
+        });
+
+        if (!response.ok) throw new Error('');
+
+        const result = await response.json();
+        getSpeechAudio(result.candidates[0].content.parts[0].text);
+
+    } catch (error) {
+
     }
 }
 
@@ -586,6 +622,7 @@ let previousLevel;
 document.addEventListener('keydown', (event) => {
     if (isDialogOpen) return; // Ignore input if dialog is open
     keysPressed[event.key.toLowerCase()] = true;
+    if (!userHasInteracted) { getIntroduction(); }
     userHasInteracted = true;
     interactionMessageDiv.style.display = 'none';
     currentHeightDiv.style.setProperty("--hud-display", "flex");
@@ -607,6 +644,7 @@ document.addEventListener('keyup', (event) => {
     keysPressed[event.key.toLowerCase()] = false;
 });
 document.addEventListener('click', function () {
+    if (!userHasInteracted) { getIntroduction(); }
     userHasInteracted = true;
     interactionMessageDiv.style.display = 'none';
     currentHeightDiv.style.setProperty("--hud-display", "flex");
@@ -863,8 +901,6 @@ function move() {
                     case LevelType.BRICK:
                         playSound("assets/sounds/se_common_landing_brick.wav");
                         setLevelText(LevelType.BRICK.name);
-                        console.log(playerCurrentLevel);
-                    
                         if (playerCurrentLevel !== LevelType.BRICK.name) {
                             playerCurrentLevel = LevelType.BRICK.name;
                         }

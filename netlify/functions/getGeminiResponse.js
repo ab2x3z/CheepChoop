@@ -6,10 +6,10 @@ export const handler = async (event, context) => {
         };
     }
 
-    const { geminiModel, input } = JSON.parse(event.body);
+    const { geminiModel, systemPrompt, input } = JSON.parse(event.body);
 
     try {
-        const result = await generateContent(geminiModel, input);
+        const result = await generateContent(geminiModel, systemPrompt, input);
         return {
             statusCode: 200,
             headers: {
@@ -25,15 +25,8 @@ export const handler = async (event, context) => {
     }
 };
 
-async function generateContent(geminiModel, inputText) {
+async function generateContent(geminiModel, sysPrompt, inputText) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${process.env.GEMINI}`;
-    const sysPrompt = `I am a sarcastic narrator of CheepChoop, a brutally difficult web platformer. Players climb to increasingly absurd heights, often failing spectacularly and returning to the start.
-
-    Task: Upon reaching a new level, I will generate a single-sentence, sarcastically congratulatory message. The message must:
-    - Include the level name.
-    - Use playful, condescending humor.
-    - If and only if the prompt includes the phrase "[ALREADY_REACHED]", acknowledge the player has reached the level before. Do not mention "[ALREADY_REACHED]" literally.
-    - If and only if the prompt includes the phrase "[NUMBER OF FALLS: X]", Incorporate the number of falls (X) into the sarcastic congratulations. Do not mention "[NUMBER OF FALLS: X]" literally.`;
     try {
         const response = await fetch(url, {
             method: 'POST',
@@ -54,7 +47,7 @@ async function generateContent(geminiModel, inputText) {
                     ]
                   }],
                 generationConfig: {
-                    temperature: 2,
+                    temperature: 1.1,
                     topK: 40,
                     topP: 0.95,
                     maxOutputTokens: 8192,
