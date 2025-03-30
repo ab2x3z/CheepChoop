@@ -157,7 +157,7 @@ async function congratulate(level) {
     const reached = maxLevel.value >= level.value ? `[ALREADY_REACHED]` : ``;
     const falls = felled > 0 ? `[NUMBER OF FALLS: ${felled}]` : ``;
     let prompt = '';
-    
+
     if (level.name !== '???'){
         prompt = `Reached the level ${level.name}. ${reached} ${falls}`;
     } else {
@@ -592,15 +592,15 @@ document.addEventListener('keydown', (event) => {
     maxHeightDiv.style.setProperty("--hud-display", "flex");
     currentLevelDiv.style.setProperty("--hud-display", "block");
 
-    if (event.key === 'g') {
-        godMode = !godMode;
-        if (godMode) {
-            previousLevel = document.getElementById('currentLevel').textContent;
-            document.getElementById('currentLevel').textContent = 'GodMode';
-        } else {
-            document.getElementById('currentLevel').textContent = previousLevel;
-        }
-    }
+    // if (event.key === 'g') {
+    //     godMode = !godMode;
+    //     if (godMode) {
+    //         previousLevel = document.getElementById('currentLevel').textContent;
+    //         document.getElementById('currentLevel').textContent = 'GodMode';
+    //     } else {
+    //         document.getElementById('currentLevel').textContent = previousLevel;
+    //     }
+    // }
 });
 document.addEventListener('keyup', (event) => {
     if (isDialogOpen) return; // Ignore input if dialog is open
