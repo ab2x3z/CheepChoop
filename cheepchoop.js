@@ -151,6 +151,109 @@ function playSound(soundPath, volume = 0.2) {
     sound.play().catch(error => console.log("Audio play failed:", error));
 }
 
+const geminiModel = "gemini-2.0-flash-lite";
+const prompt = `You are the sarcastic narrator of CheepChoop, a frustratingly addictive web platformer where players must climb to ever-increasing heights. The game is visually simple, but notoriously difficult; one wrong move sends players plummeting back to the very beginning. When the player reaches a new level, craft a short, sarcastic congratulatory message that highlights both the level number and the height reached. If the scenario includes the phrase '[NUMBER OF FALLS: X]' (where X is a number) in their prompt, include the number of falls in your sarcastic congratulations. Your message should never be more than two sentences long. Be creatively sarcastic, using humor that is playfully condescending.`;
+
+async function congratulate(level, heigh) {
+    const falls = felled > 1 ? `[NUMBER OF FALLS: ${felled}]` : ``;
+    let scenario = '';
+    if (level !== '???'){
+        scenario = `Now, respond to the following scenario: The player has just reached the level ${level} at a height of ${heigh} meters. ${falls}`;
+    } else {
+        scenario = `Now, respond to the following scenario: The player has just reached the secret NULL level its invisible and therefore, hard to find (really not). ${falls}`;
+    }
+    
+    try {
+        const response = await fetch('/.netlify/functions/getGeminiResponse', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                geminiModel: geminiModel,
+                input: `${prompt} ${scenario}`
+            }),
+            credentials: 'same-origin'
+        });
+
+        if (!response.ok) throw new Error('');
+
+        const result = await response.json();
+        getSpeechAudio(result.candidates[0].content.parts[0].text, null, 1.2, 1.0);
+
+    } catch (error) {
+
+    }
+}
+
+function getSpeechAudio(text, voiceName = null, pitch = 1, rate = 1) {
+    const statusElement = document.getElementById('status');
+
+    // Check for browser support
+    if (!('speechSynthesis' in window)) {
+        statusElement.textContent = "Sorry, your browser doesn't support text-to-speech!";
+        alert("Sorry, your browser doesn't support text-to-speech!");
+        return;
+    }
+
+    const synth = window.speechSynthesis;
+
+    if (synth.speaking) {
+        statusElement.textContent = "Already speaking...";
+        console.warn('SpeechSynthesisUtterance is already speaking.');
+        synth.cancel();
+        return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(text);
+
+    // Set utterance parameters
+    utterance.pitch = pitch; // Range 0-2. Higher pitch might sound more cheerful.
+    utterance.rate = rate;   // Range 0.1-10. Controls speed. 1 is default.
+    utterance.volume = 1;    // Range 0-1.
+
+    // Select a Voice (This is tricky and OS/browser dependent)
+    let voices = synth.getVoices();
+
+    const setVoiceAndSpeak = () => {
+        voices = synth.getVoices(); // Refresh list just in case
+        if (voices.length === 0) {
+            console.warn("No voices loaded yet.");
+            statusElement.textContent = "Waiting for voices to load...";
+            setTimeout(setVoiceAndSpeak, 100); // Retry after 100ms
+            return;
+        }
+
+        let selectedVoice = null;
+
+        const enVoices = voices.filter(voice => voice.lang.startsWith('en'));
+        selectedVoice = enVoices[Math.floor(Math.random() * enVoices.length)];
+
+        // Fallback: Find the first available English voice, or just the very first voice
+        if (!selectedVoice) {
+            selectedVoice = voices.find(voice => voice.lang.startsWith('en')) || voices[0];
+        }
+
+        if (selectedVoice) {
+            utterance.voice = selectedVoice;
+            console.log(`Using voice: ${selectedVoice.name} (${selectedVoice.lang})`);
+        } else {
+            console.warn("Could not find a suitable voice. Using default.");
+            statusElement.textContent = "Could not find a suitable voice. Using default.";
+        }
+
+        synth.speak(utterance);
+    };
+
+    // Voices might not be loaded immediately.
+    if (voices.length !== 0) {
+        setVoiceAndSpeak();
+    } else {
+        // Listen for the voices to change/load
+        synth.onvoiceschanged = setVoiceAndSpeak;
+    }
+}
+
 // ******************************  Create Player  ******************************
 const geometrySphere = new THREE.SphereGeometry(sphereRadius, 32, 32);
 const rockMap = loadTexture(manager, 'assets/player/ChristmasTreeOrnament017_1K-JPG_Color.jpg');
@@ -301,7 +404,7 @@ function createPlatforms(manager, levels) {
 
         if (level.ao) {
             const ao = loadTexture(manager, `assets/platforms/${level.ao}`);
-    
+
             return new THREE.MeshStandardMaterial({
                 map: texture,
                 normalMap: normal,
@@ -479,9 +582,6 @@ const keysPressed = {};
 let isDialogOpen = false;
 let previousLevel;
 
-const currentEnvRequest = await fetch('/.netlify/functions/getEnvironment');
-const currentEnv = await currentEnvRequest.json();
-
 document.addEventListener('keydown', (event) => {
     if (isDialogOpen) return; // Ignore input if dialog is open
     keysPressed[event.key.toLowerCase()] = true;
@@ -490,16 +590,16 @@ document.addEventListener('keydown', (event) => {
     currentHeightDiv.style.setProperty("--hud-display", "flex");
     maxHeightDiv.style.setProperty("--hud-display", "flex");
     currentLevelDiv.style.setProperty("--hud-display", "block");
-    
-    if (event.key === 'g' && currentEnv.env === 'dev') {
-        godMode = !godMode;
-        if (godMode) {
-            previousLevel = document.getElementById('currentLevel').textContent;
-            document.getElementById('currentLevel').textContent = 'GodMode';
-        } else {
-            document.getElementById('currentLevel').textContent = previousLevel;
-        }
-    }
+
+    // if (event.key === 'g') {
+    //     godMode = !godMode;
+    //     if (godMode) {
+    //         previousLevel = document.getElementById('currentLevel').textContent;
+    //         document.getElementById('currentLevel').textContent = 'GodMode';
+    //     } else {
+    //         document.getElementById('currentLevel').textContent = previousLevel;
+    //     }
+    // }
 });
 document.addEventListener('keyup', (event) => {
     if (isDialogOpen) return; // Ignore input if dialog is open
@@ -522,12 +622,14 @@ let jumpVelocity = 0;
 let momentum = new THREE.Vector3(0, 0, 0);
 let maxHeight = 0;
 let maxLevel = LevelType.GROUND;
+let playerCurrentLevel = LevelType.GROUND;
 let lastHeight;
 let fallDistance;
 let isFalling;
 let godMode = false;
 const upVector = new THREE.Vector3(0, 1, 0);
 let isLoading = true;
+let felled = 0;
 
 // Collision detection function (Sphere - Box)
 function checkSphereBoxCollision(sphere, box) {
@@ -612,8 +714,6 @@ function lockPointer() {
     const canvas = renderer.domElement;
     canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock;
 
-    console.log(canvas.requestPointerLock);
-
     if (canvas.requestPointerLock) {
         canvas.requestPointerLock();
     }
@@ -632,7 +732,6 @@ function pointerLockChange() {
         togglePauseMenu(true);
     }
 }
-
 
 // Mouse movement handler
 function onMouseMove(event) {
@@ -752,6 +851,9 @@ function move() {
                     case LevelType.WOOD:
                         playSound("assets/sounds/se_common_landing_wood.wav");
                         setLevelText(LevelType.WOOD.name);
+                        if (playerCurrentLevel !== LevelType.WOOD.name) {
+                            playerCurrentLevel = LevelType.WOOD.name;
+                        }
                         if (maxLevel.value < LevelType.WOOD.value) {
                             setMaxLevel(LevelType.WOOD);
                         }
@@ -760,6 +862,11 @@ function move() {
                     case LevelType.BRICK:
                         playSound("assets/sounds/se_common_landing_brick.wav");
                         setLevelText(LevelType.BRICK.name);
+                        console.log(playerCurrentLevel);
+                    
+                        if (playerCurrentLevel !== LevelType.BRICK.name) {
+                            playerCurrentLevel = LevelType.BRICK.name;
+                        }
                         if (maxLevel.value < LevelType.BRICK.value) {
                             setMaxLevel(LevelType.BRICK);
                         }
@@ -768,6 +875,10 @@ function move() {
                     case LevelType.SAND:
                         playSound("assets/sounds/se_common_landing_sand.wav");
                         setLevelText(LevelType.SAND.name);
+                        if (playerCurrentLevel !== LevelType.SAND.name) {
+                            playerCurrentLevel = LevelType.SAND.name;
+                            congratulate(LevelType.SAND.name, 146);
+                        }
                         if (maxLevel.value < LevelType.SAND.value) {
                             setMaxLevel(LevelType.SAND);
                         }
@@ -776,6 +887,9 @@ function move() {
                     case LevelType.MARBLE:
                         playSound("assets/sounds/se_common_landing_marble.wav");
                         setLevelText(LevelType.MARBLE.name);
+                        if (playerCurrentLevel !== LevelType.MARBLE.name) {
+                            playerCurrentLevel = LevelType.MARBLE.name;
+                        }
                         if (maxLevel.value < LevelType.MARBLE.value) {
                             setMaxLevel(LevelType.MARBLE);
                         }
@@ -784,6 +898,10 @@ function move() {
                     case LevelType.OBSIDIAN:
                         playSound("assets/sounds/se_common_landing_obsidian.wav");
                         setLevelText(LevelType.OBSIDIAN.name);
+                        if (playerCurrentLevel !== LevelType.OBSIDIAN.name) {
+                            playerCurrentLevel = LevelType.OBSIDIAN.name;
+                            congratulate(LevelType.OBSIDIAN.name, 284);
+                        }
                         if (maxLevel.value < LevelType.OBSIDIAN.value) {
                             setMaxLevel(LevelType.OBSIDIAN);
                         }
@@ -791,6 +909,10 @@ function move() {
 
                     case LevelType.NULL:
                         setLevelText(LevelType.NULL.name);
+                        if (playerCurrentLevel !== LevelType.NULL.name) {
+                            playerCurrentLevel = LevelType.NULL.name;
+                            congratulate(LevelType.NULL.name);
+                        }
                         if (maxLevel.value < LevelType.NULL.value) {
                             setMaxLevel(LevelType.NULL);
                         }
@@ -799,6 +921,9 @@ function move() {
                     case LevelType.SCIFI:
                         playSound("assets/sounds/se_common_landing_sci-fi.wav");
                         setLevelText(LevelType.SCIFI.name);
+                        if (playerCurrentLevel !== LevelType.SCIFI.name) {
+                            playerCurrentLevel = LevelType.SCIFI.name;
+                        }
                         if (maxLevel.value < LevelType.SCIFI.value) {
                             setMaxLevel(LevelType.SCIFI);
                         }
@@ -807,6 +932,9 @@ function move() {
                     case LevelType.SLEEP:
                         playSound("assets/sounds/se_common_landing_bed.wav");
                         setLevelText(LevelType.SLEEP.name);
+                        if (playerCurrentLevel !== LevelType.SLEEP.name) {
+                            playerCurrentLevel = LevelType.SLEEP.name;
+                        }
                         if (maxLevel.value < LevelType.SLEEP.value) {
                             setMaxLevel(LevelType.SLEEP);
                         }
@@ -815,6 +943,10 @@ function move() {
                     case LevelType.TRASH:
                         playSound("assets/sounds/se_common_landing_trash.wav");
                         setLevelText(LevelType.TRASH.name);
+                        if (playerCurrentLevel !== LevelType.TRASH.name) {
+                            playerCurrentLevel = LevelType.TRASH.name;
+                            congratulate(LevelType.TRASH.name, 560);
+                        }
                         if (maxLevel.value < LevelType.TRASH.value) {
                             setMaxLevel(LevelType.TRASH);
                         }
@@ -858,6 +990,7 @@ function move() {
         if (fallDistance > 100 && !isFalling && sphere.position.y > 700) {
             playSound("assets/sounds/se_common_oh-no.wav");
             isFalling = true;
+            felled++;
             setTimeout(() => {
                 setupBackgroundMusic('Past Sadness.mp3');
                 if (!noMusic) {
