@@ -228,17 +228,11 @@ async function congratulate(level) {
     Task: Upon reaching a new level, I will generate a single-sentence, sarcastically congratulatory message. The message must:
     - Include the level name.
     - Use playful, condescending humor.
+    - If and only if the level name is 'Obsidian', acknowledge that this is the FINAL LEVEL. Its platform are really small and its defenitively the last level.
+    - If and only if the level name is '???', acknowledge that the player found the secret NULL level its invisible and therefore, hard to find (its really not).
     - If and only if the prompt includes the phrase "[ALREADY_REACHED]", acknowledge the player has reached the level before. Do not mention "[ALREADY_REACHED]" literally.
     - If and only if the prompt includes the phrase "[NUMBER OF FALLS: X]", Incorporate the number of falls (X) into the sarcastic congratulations. Do not mention "[NUMBER OF FALLS: X]" literally.`;
-    let prompt = '';
-
-    if (level.name === 'Obsidian') {
-        prompt = `Reached the ABSOLUTE LAST LEVEL, Obsidian. Its platform are really small and its defenitively the last level. ${reached} ${falls}`;
-    } else if (level.name === '???') {
-        prompt = `Reached the secret NULL level its invisible and therefore, hard to find (really not). ${reached} ${falls}`;
-    } else {
-        prompt = `Reached the level ${level.name}. ${reached} ${falls}`;
-    }
+    let prompt = `Reached the level ${level.name}. ${reached} ${falls}`;
 
     try {
         const response = await fetch('/.netlify/functions/getGeminiResponse', {
@@ -265,7 +259,8 @@ async function congratulate(level) {
 }
 
 async function getIntroduction() {
-    let prompt = 'You are a sarcastic narrator introducing CheepChoop, a brutally difficult web platformer. Players endure a climb to absurd heights, repeatedly failing and returning to the start.  There are five levels, each constructed of increasingly smaller platforms: WOOD, BRICK, SAND, MARBLE, and OBSIDIAN.  (Hint: When players reach the final Obsidian platform, they will notice distant objects still above them, suggesting the climb continues...) Deliver a concise introduction, two sentences max.';
+    const sysPrompt = 'I am a sarcastic narrator introducing CheepChoop';
+    let prompt = 'CheepChoop is a brutally difficult web platformer. Players endure a climb to absurd heights, repeatedly failing and returning to the start.  There are five levels, each constructed of increasingly smaller platforms: WOOD, BRICK, SAND, MARBLE, and OBSIDIAN.  (Hint: When players reach the final Obsidian platform, they will notice distant objects still above them, suggesting the climb continues...) Deliver a concise introduction, two sentences max.';
 
     try {
         const response = await fetch('/.netlify/functions/getGeminiResponse', {
@@ -275,7 +270,7 @@ async function getIntroduction() {
             },
             body: JSON.stringify({
                 geminiModel: geminiModel,
-                systemPrompt: 'I am a sarcastic narrator introducing CheepChoop',
+                systemPrompt: sysPrompt,
                 input: prompt
             }),
             credentials: 'same-origin'
