@@ -230,8 +230,6 @@ function getSpeechAudio(text) {
         synth.speak(utterance);
     };
 
-    console.log(JSON.stringify(conversation));
-
     // Voices might not be loaded immediately.
     if (voices.length !== 0) {
         setVoiceAndSpeak();
@@ -652,15 +650,15 @@ document.addEventListener('keydown', (event) => {
     maxHeightDiv.style.setProperty("--hud-display", "flex");
     currentLevelDiv.style.setProperty("--hud-display", "block");
 
-    if (event.key === 'g') {
-        godMode = !godMode;
-        if (godMode) {
-            previousLevel = document.getElementById('currentLevel').textContent;
-            document.getElementById('currentLevel').textContent = 'GodMode';
-        } else {
-            document.getElementById('currentLevel').textContent = previousLevel;
-        }
-    }
+    // if (event.key === 'g') {
+    //     godMode = !godMode;
+    //     if (godMode) {
+    //         previousLevel = document.getElementById('currentLevel').textContent;
+    //         document.getElementById('currentLevel').textContent = 'GodMode';
+    //     } else {
+    //         document.getElementById('currentLevel').textContent = previousLevel;
+    //     }
+    // }
 });
 document.addEventListener('keyup', (event) => {
     if (isDialogOpen) return; // Ignore input if dialog is open
