@@ -132,6 +132,25 @@ function loadAndRepeatTexture(manager, path, repeatFactor) {
 let backgroundMusic;
 let noMusic;
 
+const sysPrompt = `I am a sarcastic narrator of CheepChoop, a brutally difficult web platformer. Players climb to increasingly absurd heights, often failing spectacularly and returning to the start.
+
+    Task: Upon reaching a new level, I will generate a single-sentence, sarcastically congratulatory message. The message must:
+    - Include the level name.
+    - Use playful, condescending humor.
+    - If and only if the level name is 'Obsidian', acknowledge that this is the FINAL LEVEL. Its platform are really small and its defenitively the last level.
+    - If and only if the level name is '???', acknowledge that the player found the secret NULL level its invisible and therefore, hard to find (its really not).
+    - If and only if the prompt includes the phrase "[ALREADY_REACHED]", acknowledge the player has reached the level before. Do not mention "[ALREADY_REACHED]" literally.
+    - If and only if the prompt includes the phrase "[NUMBER OF FALLS: X]", Incorporate the number of falls (X) into the sarcastic congratulations. Do not mention "[NUMBER OF FALLS: X]" literally.`;
+
+let conversation = {
+    contents: [
+        {
+            role: "model",
+            parts: [{ text: sysPrompt }],
+        },
+    ],
+};
+
 function setupBackgroundMusic(music = 'Mind-Bender.mp3') {
     if (backgroundMusic && backgroundMusic.src.endsWith(music)) return;
     if (backgroundMusic) backgroundMusic.pause();
@@ -211,6 +230,8 @@ function getSpeechAudio(text) {
         synth.speak(utterance);
     };
 
+    console.log(JSON.stringify(conversation));
+
     // Voices might not be loaded immediately.
     if (voices.length !== 0) {
         setVoiceAndSpeak();
@@ -223,17 +244,14 @@ function getSpeechAudio(text) {
 async function congratulate(level) {
     const reached = maxLevel.value >= level.value ? `[ALREADY_REACHED]` : ``;
     const falls = felled > 0 ? `[NUMBER OF FALLS: ${felled}]` : ``;
-    const sysPrompt = `I am a sarcastic narrator of CheepChoop, a brutally difficult web platformer. Players climb to increasingly absurd heights, often failing spectacularly and returning to the start.
 
-    Task: Upon reaching a new level, I will generate a single-sentence, sarcastically congratulatory message. The message must:
-    - Include the level name.
-    - Use playful, condescending humor.
-    - If and only if the level name is 'Obsidian', acknowledge that this is the FINAL LEVEL. Its platform are really small and its defenitively the last level.
-    - If and only if the level name is '???', acknowledge that the player found the secret NULL level its invisible and therefore, hard to find (its really not).
-    - If and only if the prompt includes the phrase "[ALREADY_REACHED]", acknowledge the player has reached the level before. Do not mention "[ALREADY_REACHED]" literally.
-    - If and only if the prompt includes the phrase "[NUMBER OF FALLS: X]", Incorporate the number of falls (X) into the sarcastic congratulations. Do not mention "[NUMBER OF FALLS: X]" literally.`;
     let prompt = `Reached the level ${level.name}. ${reached} ${falls}`;
 
+    conversation.contents.push({
+        role: "user",
+        parts: [{ text: prompt }],
+    });
+    
     try {
         const response = await fetch('/.netlify/functions/getGeminiResponse', {
             method: 'POST',
@@ -242,8 +260,7 @@ async function congratulate(level) {
             },
             body: JSON.stringify({
                 geminiModel: geminiModel,
-                systemPrompt: sysPrompt,
-                input: prompt
+                conversation: conversation
             }),
             credentials: 'same-origin'
         });
@@ -252,6 +269,10 @@ async function congratulate(level) {
 
         const result = await response.json();
         getSpeechAudio(result.candidates[0].content.parts[0].text);
+        conversation.contents.push({
+            role: "model",
+            parts: [{ text: result.candidates[0].content.parts[0].text }],
+        });
 
     } catch (error) {
 
@@ -259,8 +280,12 @@ async function congratulate(level) {
 }
 
 async function getIntroduction() {
-    const sysPrompt = 'I am a sarcastic narrator introducing CheepChoop';
     let prompt = 'CheepChoop is a brutally difficult web platformer. Players endure a climb to absurd heights, repeatedly failing and returning to the start.  There are five levels, each constructed of increasingly smaller platforms: WOOD, BRICK, SAND, MARBLE, and OBSIDIAN.  (Hint: When players reach the final Obsidian platform, they will notice distant objects still above them, suggesting the climb continues...) Deliver a concise introduction, two sentences max.';
+
+    conversation.contents.push({
+        role: "user",
+        parts: [{ text: prompt }],
+    });
 
     try {
         const response = await fetch('/.netlify/functions/getGeminiResponse', {
@@ -270,8 +295,7 @@ async function getIntroduction() {
             },
             body: JSON.stringify({
                 geminiModel: geminiModel,
-                systemPrompt: sysPrompt,
-                input: prompt
+                conversation: conversation
             }),
             credentials: 'same-origin'
         });
@@ -280,6 +304,10 @@ async function getIntroduction() {
 
         const result = await response.json();
         getSpeechAudio(result.candidates[0].content.parts[0].text);
+        conversation.contents.push({
+            role: "model",
+            parts: [{ text: result.candidates[0].content.parts[0].text }],
+        });
 
     } catch (error) {
 
@@ -462,7 +490,12 @@ function createPlatforms(manager, levels) {
         for (let i = 0; i < numberOfPlatforms; i++) {
             let platform;
 
-            if (level.type === LevelType.SCIFI) {
+            if (level.type === LevelType.NULL) {
+                platform = new THREE.Mesh(
+                    new THREE.BoxGeometry(level.size, 1, level.size),
+                    new THREE.MeshBasicMaterial({ visible: false })
+                );
+            } else if (level.type === LevelType.SCIFI) {
                 platform = new THREE.Mesh();
                 loader.load(level.model, (gltf) => {
                     const model = gltf.scene;
@@ -477,11 +510,6 @@ function createPlatforms(manager, levels) {
                     model.position.y -= 4;
                     platform.add(model);
                 });
-            } else if (level.type === LevelType.NULL) {
-                platform = new THREE.Mesh(
-                    new THREE.BoxGeometry(level.size, 1, level.size),
-                    new THREE.MeshBasicMaterial({ visible: false })
-                );
             } else if (level.type === LevelType.TRASH) {
                 platform = new THREE.Mesh();
                 loader.load(level.model, (gltf) => {
@@ -624,15 +652,15 @@ document.addEventListener('keydown', (event) => {
     maxHeightDiv.style.setProperty("--hud-display", "flex");
     currentLevelDiv.style.setProperty("--hud-display", "block");
 
-    // if (event.key === 'g') {
-    //     godMode = !godMode;
-    //     if (godMode) {
-    //         previousLevel = document.getElementById('currentLevel').textContent;
-    //         document.getElementById('currentLevel').textContent = 'GodMode';
-    //     } else {
-    //         document.getElementById('currentLevel').textContent = previousLevel;
-    //     }
-    // }
+    if (event.key === 'g') {
+        godMode = !godMode;
+        if (godMode) {
+            previousLevel = document.getElementById('currentLevel').textContent;
+            document.getElementById('currentLevel').textContent = 'GodMode';
+        } else {
+            document.getElementById('currentLevel').textContent = previousLevel;
+        }
+    }
 });
 document.addEventListener('keyup', (event) => {
     if (isDialogOpen) return; // Ignore input if dialog is open

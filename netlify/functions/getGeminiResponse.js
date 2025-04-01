@@ -6,10 +6,10 @@ export const handler = async (event, context) => {
         };
     }
 
-    const { geminiModel, systemPrompt, input } = JSON.parse(event.body);
+    const { geminiModel, conversation } = JSON.parse(event.body);
 
     try {
-        const result = await generateContent(geminiModel, systemPrompt, input);
+        const result = await generateContent(geminiModel, conversation);
         return {
             statusCode: 200,
             headers: {
@@ -25,7 +25,7 @@ export const handler = async (event, context) => {
     }
 };
 
-async function generateContent(geminiModel, sysPrompt, inputText) {
+async function generateContent(geminiModel, conversation) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${process.env.GEMINI}`;
     try {
         const response = await fetch(url, {
@@ -33,27 +33,7 @@ async function generateContent(geminiModel, sysPrompt, inputText) {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                contents: [{
-                    role: "model",
-                    parts: [
-                      { "text": sysPrompt }
-                    ]
-                  },
-                  {
-                    role: "user",
-                    parts: [
-                      { "text": inputText }
-                    ]
-                  }],
-                generationConfig: {
-                    temperature: 1.1,
-                    topK: 40,
-                    topP: 0.95,
-                    maxOutputTokens: 8192,
-                    responseMimeType: "text/plain"
-                }
-            }),
+            body: JSON.stringify(conversation),
         });
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
