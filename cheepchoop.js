@@ -19,6 +19,27 @@ const LevelType = {
 };
 
 const geminiModel = "gemini-2.0-flash-lite";
+const introPrompt = 'CheepChoop is a brutally difficult web platformer. Players endure a climb to absurd heights, repeatedly failing and returning to the start.  There are five levels, each constructed of increasingly smaller platforms: WOOD, BRICK, SAND, MARBLE, and OBSIDIAN.  (Hint: When players reach the final Obsidian platform, they will notice distant objects still above them, suggesting the climb continues...) Deliver a concise introduction, two sentences max.';
+const failurePrompt = 'You are a sarcastic, AI-powered game companion. The player has just fallen all the way back to the beginning of CheepChoop, a notoriously difficult platformer. Generate a short, witty, and demoralizing message (2 sentences max) that ridicules their failure and subtly suggests they might be better off quitting. Emphasize their wasted effort and the daunting task ahead. Use dry humor and a slightly patronizing tone.';
+// TODO: Add logic to trigger failurePrompt
+const sysPrompt = `I am a sarcastic narrator of CheepChoop, a brutally difficult web platformer. Players climb to increasingly absurd heights, often failing spectacularly and returning to the start.
+
+    Task: Upon reaching a new level, I will generate a single-sentence, sarcastically congratulatory message. The message must:
+    - Include the level name.
+    - Use playful, condescending humor.
+    - If and only if the level name is 'Obsidian', acknowledge that this is the FINAL LEVEL. Its platform are really small and its defenitively the last level.
+    - If and only if the level name is '???', acknowledge that the player found the secret NULL level its invisible and therefore, hard to find (its really not).
+    - If and only if the prompt includes the phrase "[ALREADY_REACHED]", acknowledge the player has reached the level before. Do not mention "[ALREADY_REACHED]" literally.
+    - If and only if the prompt includes the phrase "[NUMBER OF FALLS: X]", Incorporate the number of falls (X) into the sarcastic congratulations. Do not mention "[NUMBER OF FALLS: X]" literally.`;
+let conversation = {
+    contents: [
+        {
+            role: "model",
+            parts: [{ text: sysPrompt }],
+        },
+    ],
+};
+
 const RepeatFactor = 100;
 const gravity = -0.4;
 const walkSpeed = 1;
@@ -139,25 +160,6 @@ function loadAndRepeatTexture(manager, path, repeatFactor) {
 let backgroundMusic;
 let noMusic;
 
-const sysPrompt = `I am a sarcastic narrator of CheepChoop, a brutally difficult web platformer. Players climb to increasingly absurd heights, often failing spectacularly and returning to the start.
-
-    Task: Upon reaching a new level, I will generate a single-sentence, sarcastically congratulatory message. The message must:
-    - Include the level name.
-    - Use playful, condescending humor.
-    - If and only if the level name is 'Obsidian', acknowledge that this is the FINAL LEVEL. Its platform are really small and its defenitively the last level.
-    - If and only if the level name is '???', acknowledge that the player found the secret NULL level its invisible and therefore, hard to find (its really not).
-    - If and only if the prompt includes the phrase "[ALREADY_REACHED]", acknowledge the player has reached the level before. Do not mention "[ALREADY_REACHED]" literally.
-    - If and only if the prompt includes the phrase "[NUMBER OF FALLS: X]", Incorporate the number of falls (X) into the sarcastic congratulations. Do not mention "[NUMBER OF FALLS: X]" literally.`;
-
-let conversation = {
-    contents: [
-        {
-            role: "model",
-            parts: [{ text: sysPrompt }],
-        },
-    ],
-};
-
 function setupBackgroundMusic(music = 'Mind-Bender.mp3') {
     if (backgroundMusic && backgroundMusic.src.endsWith(music)) return;
     if (backgroundMusic) backgroundMusic.pause();
@@ -246,46 +248,14 @@ function getSpeechAudio(text) {
     }
 }
 
-async function congratulate(level) {
-    const reached = maxLevel.value >= level.value ? `[ALREADY_REACHED]` : ``;
-    const falls = felled > 0 ? `[NUMBER OF FALLS: ${felled}]` : ``;
+async function getGeminiResponse(prompt) {
 
-    let prompt = `Reached the level ${level.name}. ${reached} ${falls}`;
+    if (typeof prompt !== 'string') {
+        const reached = maxLevel.value >= prompt.value ? `[ALREADY_REACHED]` : ``;
+        const falls = felled > 0 ? `[NUMBER OF FALLS: ${felled}]` : ``;
 
-    conversation.contents.push({
-        role: "user",
-        parts: [{ text: prompt }],
-    });
-
-    try {
-        const response = await fetch('/.netlify/functions/getGeminiResponse', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                geminiModel: geminiModel,
-                conversation: conversation
-            }),
-            credentials: 'same-origin'
-        });
-
-        if (!response.ok) throw new Error('');
-
-        const result = await response.json();
-        getSpeechAudio(result.candidates[0].content.parts[0].text);
-        conversation.contents.push({
-            role: "model",
-            parts: [{ text: result.candidates[0].content.parts[0].text }],
-        });
-
-    } catch (error) {
-
+        prompt = `Reached the level ${prompt.name}. ${reached} ${falls}`;
     }
-}
-
-async function getIntroduction() {
-    let prompt = 'CheepChoop is a brutally difficult web platformer. Players endure a climb to absurd heights, repeatedly failing and returning to the start.  There are five levels, each constructed of increasingly smaller platforms: WOOD, BRICK, SAND, MARBLE, and OBSIDIAN.  (Hint: When players reach the final Obsidian platform, they will notice distant objects still above them, suggesting the climb continues...) Deliver a concise introduction, two sentences max.';
 
     conversation.contents.push({
         role: "user",
@@ -659,7 +629,7 @@ let previousLevel;
 document.addEventListener('keydown', (event) => {
     if (isDialogOpen) return; // Ignore input if dialog is open
     keysPressed[event.key.toLowerCase()] = true;
-    if (!userHasInteracted) { getIntroduction(); }
+    if (!userHasInteracted) { getGeminiResponse(introPrompt); }
     userHasInteracted = true;
     interactionMessageDiv.style.display = 'none';
     currentHeightDiv.style.setProperty("--hud-display", "flex");
@@ -681,7 +651,7 @@ document.addEventListener('keyup', (event) => {
     keysPressed[event.key.toLowerCase()] = false;
 });
 document.addEventListener('click', function () {
-    if (!userHasInteracted) { getIntroduction(); }
+    if (!userHasInteracted) { getGeminiResponse(introPrompt); }
     userHasInteracted = true;
     interactionMessageDiv.style.display = 'none';
     currentHeightDiv.style.setProperty("--hud-display", "flex");
@@ -951,7 +921,7 @@ function move() {
                         setLevelText(LevelType.SAND.name);
                         if (playerCurrentLevel !== LevelType.SAND.name) {
                             playerCurrentLevel = LevelType.SAND.name;
-                            congratulate(LevelType.SAND);
+                            getGeminiResponse(LevelType.SAND);
                         }
                         if (maxLevel.value < LevelType.SAND.value) {
                             setMaxLevel(LevelType.SAND);
@@ -974,7 +944,7 @@ function move() {
                         setLevelText(LevelType.OBSIDIAN.name);
                         if (playerCurrentLevel !== LevelType.OBSIDIAN.name) {
                             playerCurrentLevel = LevelType.OBSIDIAN.name;
-                            congratulate(LevelType.OBSIDIAN);
+                            getGeminiResponse(LevelType.OBSIDIAN);
                         }
                         if (maxLevel.value < LevelType.OBSIDIAN.value) {
                             setMaxLevel(LevelType.OBSIDIAN);
@@ -985,7 +955,7 @@ function move() {
                         setLevelText(LevelType.NULL.name);
                         if (playerCurrentLevel !== LevelType.NULL.name) {
                             playerCurrentLevel = LevelType.NULL.name;
-                            congratulate(LevelType.NULL);
+                            getGeminiResponse(LevelType.NULL);
                         }
                         if (maxLevel.value < LevelType.NULL.value) {
                             setMaxLevel(LevelType.NULL);
@@ -1030,7 +1000,7 @@ function move() {
                         setLevelText(LevelType.TRASH.name);
                         if (playerCurrentLevel !== LevelType.TRASH.name) {
                             playerCurrentLevel = LevelType.TRASH.name;
-                            congratulate(LevelType.TRASH);
+                            getGeminiResponse(LevelType.TRASH);
                         }
                         if (maxLevel.value < LevelType.TRASH.value) {
                             setMaxLevel(LevelType.TRASH);
