@@ -14,7 +14,8 @@ const LevelType = {
     NULL: { value: 6, name: '???' },
     SCIFI: { value: 7, name: 'Sci-Fi' },
     SLEEP: { value: 8, name: 'Sleep' },
-    TRASH: { value: 9, name: 'Trash' }
+    STOVE: { value: 9, name: 'Stove' },
+    TRASH: { value: 10, name: 'Trash' }
 };
 
 const geminiModel = "gemini-2.0-flash-lite";
@@ -79,7 +80,13 @@ const platformLevels = [
     },
     {
         type: LevelType.SLEEP,
-        model: 'assets/glTFs/bed/scene.gltf'
+        model: 'assets/glTFs/bed/scene.gltf',
+        size: 60
+    },
+    {
+        type: LevelType.STOVE,
+        model: 'assets/glTFs/gas_stove/scene.gltf',
+        size: 38
     },
     {
         type: LevelType.TRASH,
@@ -249,7 +256,7 @@ async function congratulate(level) {
         role: "user",
         parts: [{ text: prompt }],
     });
-    
+
     try {
         const response = await fetch('/.netlify/functions/getGeminiResponse', {
             method: 'POST',
@@ -501,11 +508,20 @@ function createPlatforms(manager, levels) {
                     platform.add(model);
                 });
             } else if (level.type === LevelType.SLEEP) {
-                platform = new THREE.Mesh(new THREE.BoxGeometry(30, 1, 60), new THREE.MeshBasicMaterial({ visible: false }));
+                platform = new THREE.Mesh(new THREE.BoxGeometry(level.size / 2, 1, level.size), new THREE.MeshBasicMaterial({ visible: false }));
                 loader.load(level.model, (gltf) => {
                     const model = gltf.scene;
                     model.scale.set(0.03, 0.03, 0.03);
                     model.position.y -= 4;
+                    platform.add(model);
+                });
+            } else if (level.type === LevelType.STOVE) {
+                platform = new THREE.Mesh(new THREE.BoxGeometry(level.size, 1, level.size), new THREE.MeshBasicMaterial({ visible: false }));
+                loader.load(level.model, (gltf) => {
+                    const model = gltf.scene;
+                    model.scale.set(0.5, 0.5, 0.5);
+                    model.position.y += 1.5;
+                    model.rotateX(Math.PI);
                     platform.add(model);
                 });
             } else if (level.type === LevelType.TRASH) {
@@ -995,6 +1011,17 @@ function move() {
                         }
                         if (maxLevel.value < LevelType.SLEEP.value) {
                             setMaxLevel(LevelType.SLEEP);
+                        }
+                        break;
+
+                    case LevelType.STOVE:
+                        playSound("assets/sounds/se_common_metal_landing.wav");
+                        setLevelText(LevelType.STOVE.name);
+                        if (playerCurrentLevel !== LevelType.STOVE.name) {
+                            playerCurrentLevel = LevelType.STOVE.name;
+                        }
+                        if (maxLevel.value < LevelType.STOVE.value) {
+                            setMaxLevel(LevelType.STOVE);
                         }
                         break;
 
