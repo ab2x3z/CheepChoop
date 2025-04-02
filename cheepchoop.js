@@ -192,19 +192,10 @@ function getSpeechAudio(text) {
 
     const synth = window.speechSynthesis;
 
-    if (synth.speaking) {
-        statusElement.textContent = "Already speaking...";
-        console.warn('SpeechSynthesisUtterance is already speaking.');
-        synth.cancel();
-        return;
-    }
+    // Cancel any ongoing speech immediately
+    synth.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
-
-    // Set utterance parameters
-    utterance.pitch = 1; // Range 0-2. Higher pitch might sound more cheerful.
-    utterance.rate = 1;   // Range 0.1-10. Controls speed. 1 is default.
-    utterance.volume = 1;    // Range 0-1.
 
     // Select a Voice (This is tricky and OS/browser dependent)
     let voices = synth.getVoices();
@@ -218,10 +209,8 @@ function getSpeechAudio(text) {
             return;
         }
 
-        let selectedVoice = null;
-
-        const enVoices = voices.filter(voice => voice.lang.startsWith('en'));
-        selectedVoice = enVoices[Math.floor(Math.random() * enVoices.length)]; // Get a random voice
+        // Select the desired voice for CheepChoop
+        let selectedVoice = voices.filter(voice => voice.name.startsWith('Microsoft Mark'))[0];
 
         // Fallback: Find the first available English voice, or just the very first voice
         if (!selectedVoice) {
@@ -255,7 +244,7 @@ async function getGeminiResponse(prompt) {
         const falls = felled > 0 ? `[NUMBER OF FALLS: ${felled}]` : ``;
 
         prompt = `Reached the level ${prompt.name}. ${reached} ${falls}`;
-    } else if (prompt === failurePrompt){
+    } else if (prompt === failurePrompt) {
         prompt += `[DISTANCE FALLEN: ${Math.round(fallDistance / 10)}]`;
     }
 
@@ -1034,7 +1023,7 @@ function move() {
 
         if (!grounded) {
             playSound("assets/sounds/se_common_landing_grass.wav");
-            if (isFalling){
+            if (isFalling) {
                 getGeminiResponse(failurePrompt);
             }
         }
