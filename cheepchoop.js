@@ -21,7 +21,6 @@ const LevelType = {
 const geminiModel = "gemini-2.0-flash-lite";
 const introPrompt = 'CheepChoop is a brutally difficult web platformer. Players endure a climb to absurd heights, repeatedly failing and returning to the start.  There are five levels, each constructed of increasingly smaller platforms: WOOD, BRICK, SAND, MARBLE, and OBSIDIAN.  (Hint: When players reach the final Obsidian platform, they will notice distant objects still above them, suggesting the climb continues...) Deliver a concise introduction, two sentences max.';
 const failurePrompt = 'You are a sarcastic, AI-powered game companion. The player has just fallen all the way back to the beginning of CheepChoop, a notoriously difficult platformer. Generate a short, witty, and demoralizing message (2 sentences max) that ridicules their failure and subtly suggests they might be better off quitting. Emphasize their wasted effort and the daunting task ahead. Use dry humor and a slightly patronizing tone.';
-// TODO: Add logic to trigger failurePrompt
 const sysPrompt = `I am a sarcastic narrator of CheepChoop, a brutally difficult web platformer. Players climb to increasingly absurd heights, often failing spectacularly and returning to the start.
 
     Task: Upon reaching a new level, I will generate a single-sentence, sarcastically congratulatory message. The message must:
@@ -30,7 +29,8 @@ const sysPrompt = `I am a sarcastic narrator of CheepChoop, a brutally difficult
     - If and only if the level name is 'Obsidian', acknowledge that this is the FINAL LEVEL. Its platform are really small and its defenitively the last level.
     - If and only if the level name is '???', acknowledge that the player found the secret NULL level its invisible and therefore, hard to find (its really not).
     - If and only if the prompt includes the phrase "[ALREADY_REACHED]", acknowledge the player has reached the level before. Do not mention "[ALREADY_REACHED]" literally.
-    - If and only if the prompt includes the phrase "[NUMBER OF FALLS: X]", Incorporate the number of falls (X) into the sarcastic congratulations. Do not mention "[NUMBER OF FALLS: X]" literally.`;
+    - If and only if the prompt includes the phrase "[NUMBER OF FALLS: X]", Incorporate the number of falls (X) into the response. Do not mention "[NUMBER OF FALLS: X]" literally.
+    - If and only if the prompt includes the phrase "[DISTANCE FALLEN: X]", Incorporate the distance fallen (X) in meters into the response. Do not mention "[DISTANCE FALLEN: X]" literally.`;
 let conversation = {
     contents: [
         {
@@ -255,6 +255,8 @@ async function getGeminiResponse(prompt) {
         const falls = felled > 0 ? `[NUMBER OF FALLS: ${felled}]` : ``;
 
         prompt = `Reached the level ${prompt.name}. ${reached} ${falls}`;
+    } else if (prompt === failurePrompt){
+        prompt += `[DISTANCE FALLEN: ${Math.round(fallDistance / 10)}]`;
     }
 
     conversation.contents.push({
@@ -1032,6 +1034,9 @@ function move() {
 
         if (!grounded) {
             playSound("assets/sounds/se_common_landing_grass.wav");
+            if (isFalling){
+                getGeminiResponse(failurePrompt);
+            }
         }
         grounded = true;
     } else if (!onPlatform) {
