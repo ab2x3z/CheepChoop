@@ -242,7 +242,7 @@ let conversation = {
     generationConfig: {
         temperature: 1.5,
         topK: 40,
-        topP: 0.95,
+        topP: 0.9,
         maxOutputTokens: 8192,
         responseMimeType: "text/plain"
     }
