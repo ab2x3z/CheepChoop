@@ -156,13 +156,14 @@ function loadAndRepeatTexture(manager, path, repeatFactor) {
 // ******************************  Audio Management  ******************************
 let backgroundMusic;
 let noMusic;
+let volume = 1;
 
 function setupBackgroundMusic(music = 'Mind-Bender.mp3') {
     if (backgroundMusic && backgroundMusic.src.endsWith(music)) return;
     if (backgroundMusic) backgroundMusic.pause();
     backgroundMusic = new Audio(`assets/sounds/${music}`);
     backgroundMusic.loop = true;
-    backgroundMusic.volume = 0.3;
+    backgroundMusic.volume = 0.3 * volume;
 }
 
 function playBackgroundMusic() {
@@ -170,10 +171,10 @@ function playBackgroundMusic() {
     backgroundMusic.play().catch(error => console.log("Background music play failed:", error));
 }
 
-function playSound(soundPath, volume = 0.2) {
+function playSound(soundPath) {
     if (!userHasInteracted) return;
     const sound = new Audio(soundPath);
-    sound.volume = volume;
+    sound.volume = 0.2 * volume;
     sound.play().catch(error => console.log("Audio play failed:", error));
 }
 
@@ -181,6 +182,7 @@ function getSpeechAudio(text) {
 
     // Check for browser support
     if (!('speechSynthesis' in window)) {
+        noVoiceOver = true;
         alert("Sorry, your browser doesn't support text-to-speech!");
         return;
     }
@@ -191,6 +193,8 @@ function getSpeechAudio(text) {
     synth.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
+
+    utterance.volume = 0.8 * volume;
 
     // Select a Voice (This is tricky and OS/browser dependent)
     let voices = synth.getVoices();
@@ -229,6 +233,7 @@ function getSpeechAudio(text) {
     }
 }
 
+let noVoiceOver = false;
 let conversation = {
     system_instruction: {
         parts: [{ text: sysPrompt }]
@@ -244,6 +249,8 @@ let conversation = {
 };
 
 async function getGeminiResponse(prompt) {
+    if (noVoiceOver) { return; }
+
     const height = `[DISTANCE FALLEN: ${Math.round(fallDistance / 10)}]`;
     const falls = felled > 0 ? `[NUMBER OF FALLS: ${felled}]` : ``;
 
@@ -1208,12 +1215,27 @@ dialog.querySelector('form').addEventListener('submit', async (e) => {
 
 // Pause menu elements
 const pauseMenu = document.getElementById('pauseMenu');
+const audioSettingsMenu = document.getElementById('audioSettingsMenu'); // New submenu
+const audioSettingsButton = document.getElementById('audioSettingsButton'); // New button
 const musicToggle = document.getElementById('musicToggle');
+const voiceToggle = document.getElementById('voiceToggle'); // New button
+const volumeSlider = document.getElementById('volumeSlider'); // New slider
 const returnButton = document.getElementById('returnButton');
 const submitScoreButton = document.getElementById('submitScoreButton');
 const resumeButton = document.getElementById('resumeButton');
+const backToPauseMenuButton = document.getElementById('backToPauseMenuButton'); // New button
 
 // Event listeners for pause menu buttons
+audioSettingsButton.addEventListener('click', () => {
+    pauseMenu.style.display = 'none';
+    audioSettingsMenu.style.display = 'block';
+});
+
+backToPauseMenuButton.addEventListener('click', () => {
+    audioSettingsMenu.style.display = 'none';
+    pauseMenu.style.display = 'block';
+});
+
 musicToggle.addEventListener('click', () => {
     if (backgroundMusic) {
         if (backgroundMusic.paused) {
@@ -1240,6 +1262,20 @@ submitScoreButton.addEventListener('click', () => {
 resumeButton.addEventListener('click', () => {
     lockPointer();
     togglePauseMenu(false);
+});
+// Placeholder for voice toggle and volume slider logic
+voiceToggle.addEventListener('click', () => {
+    if (noVoiceOver) {
+        noVoiceOver = false;
+        voiceToggle.textContent = 'Disable Voice Over';
+    } else {
+        getSpeechAudio(''); // Interupt any speech
+        noVoiceOver = true;
+        voiceToggle.textContent = 'Enable Voice Over';
+    }
+});
+volumeSlider.addEventListener('input', (event) => {
+    volume = event.target.value / 100;
 });
 
 // Function to show/hide pause menu

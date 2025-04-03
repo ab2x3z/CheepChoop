@@ -24,11 +24,20 @@
     </form>
   </dialog>
   <div id="pauseMenu">
-    <button id="resumeButton">Resume</button> <!-- New resume button -->
-    <button id="musicToggle">Disable Music</button>
+    <button id="resumeButton">Resume</button>
+    <button id="audioSettingsButton">Audio Settings</button> <!-- New button -->
     <button id="submitScoreButton">Submit High Score</button>
     <button id="returnButton">Return to Main Menu</button>
   </div>
+
+  <div id="audioSettingsMenu" style="display: none;"> <!-- New submenu -->
+    <button id="musicToggle">Disable Music</button>
+    <button id="voiceToggle">Disable Voiceover</button>
+    <label for="volumeSlider">Volume:</label>
+    <input type="range" id="volumeSlider" min="0" max="100" value="100">
+    <button id="backToPauseMenuButton">Back</button>
+  </div>
+
   <div id="progressBarContainer">
     <div id="progressBar"></div>
   </div>

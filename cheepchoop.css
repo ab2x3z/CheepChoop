@@ -322,3 +322,64 @@ dialog button:hover {
   color: white;
   text-align: center;
 }
+
+#audioSettingsMenu {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #333333;
+    color: white;
+    padding: 3rem;
+    border-radius: 15px;
+    z-index: 2000;
+    text-align: center;
+    width: 80%;
+    max-width: 600px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+#audioSettingsMenu button,
+#audioSettingsMenu label,
+#audioSettingsMenu input {
+    display: block;
+    width: 100%;
+    margin: 1rem 0;
+    font-size: 1.2rem;
+}
+
+#audioSettingsMenu input[type="range"] {
+    width: 80%;
+    margin: 0 auto;
+    display: block;
+}
+
+#audioSettingsMenu button {
+    padding: 1rem;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+#audioSettingsMenu button:hover {
+    transform: scale(1.05);
+}
+
+#backToPauseMenuButton {
+    background-color: #f44336;
+}
+
+#backToPauseMenuButton:hover {
+    background-color: #e53935;
+}
+
+#audioSettingsButton {
+    background-color: #9e9e9e;
+}
+
+#audioSettingsButton:hover {
+    background-color: #757575;
+    transform: scale(1.05);
+}
