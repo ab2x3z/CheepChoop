@@ -244,6 +244,7 @@ let conversation = {
 };
 
 async function getGeminiResponse(prompt) {
+    const height = `[DISTANCE FALLEN: ${Math.round(fallDistance / 10)}]`;
     const falls = felled > 0 ? `[NUMBER OF FALLS: ${felled}]` : ``;
 
     if (typeof prompt !== 'string') {
@@ -251,7 +252,7 @@ async function getGeminiResponse(prompt) {
 
         prompt = `Reached the beginning of level "${prompt.name}". ${reached} ${falls}`;
     } else if (prompt === failurePrompt) {
-        prompt += `[DISTANCE FALLEN: ${Math.round(fallDistance / 10)}] ${falls}`;
+        prompt += `${height} ${falls}`;
     }
 
     conversation.contents.push({
@@ -472,6 +473,7 @@ function createPlatforms(manager, levels) {
                 loader.load(level.model, (gltf) => {
                     const model = gltf.scene;
                     model.scale.set(10, 10, 10);
+                    model.position.y += 1;
                     platform.add(model);
                 });
             } else if (level.type === LevelType.SLEEP) {
