@@ -15,7 +15,8 @@ const LevelType = {
     SCIFI: { value: 7, name: 'Sci-Fi' },
     SLEEP: { value: 8, name: 'Sleep' },
     STOVE: { value: 9, name: 'Stove' },
-    TRASH: { value: 10, name: 'Trash' }
+    TRASH: { value: 10, name: 'Trash' },
+    GRIMOIRE: { value: 11, name: 'Grimoire' }
 };
 
 const geminiModel = "gemini-2.0-flash-lite";
@@ -30,7 +31,7 @@ const sysPrompt = `You are a sarcastic narrator of CheepChoop, a brutally diffic
     - If and only if the level name is '???', acknowledge that the player found the secret NULL level its invisible and therefore, hard to find (its really not).
     - If and only if the prompt includes the phrase "[ALREADY_REACHED]", acknowledge the player has reached the level before. Do not mention "[ALREADY_REACHED]" literally.
     - If and only if the prompt includes the phrase "[NUMBER OF FALLS: X]", Incorporate the number of falls (X) into the response. Do not mention "[NUMBER OF FALLS: X]" literally.
-    - If and only if the prompt includes the phrase "[DISTANCE FALLEN: X]", Incorporate the distance fallen (X) in meters into the response. Under 200 meters is a short fall, but 600 meters is a massive fall. The maximum a player can fall is 700 meters. Do not mention "[DISTANCE FALLEN: X]" literally.`;
+    - If and only if the prompt includes the phrase "[DISTANCE FALLEN: X]", Incorporate the distance fallen (X) in meters into the response. Under 200 meters is a short fall, but 600 meters is a massive fall. The maximum a player can fall is 767 meters. Do not mention "[DISTANCE FALLEN: X]" literally.`;
 const RepeatFactor = 100;
 const gravity = -0.4;
 const walkSpeed = 1;
@@ -103,6 +104,11 @@ const platformLevels = [
     {
         type: LevelType.TRASH,
         model: 'assets/glTFs/trashbag/scene.gltf'
+    },
+    {
+        type: LevelType.GRIMOIRE,
+        model: 'assets/glTFs/grimoire/scene.gltf',
+        size: 15
     }
 ];
 
@@ -492,6 +498,17 @@ function createPlatforms(manager, levels) {
                     model.scale.set(10, 10, 10);
                     model.position.y -= 8;
                     model.rotateX(Math.PI);
+                    platform.add(model);
+                });
+            } else if (level.type === LevelType.GRIMOIRE) {
+                platform = new THREE.Mesh(new THREE.BoxGeometry(level.size, 1, level.size), new THREE.MeshBasicMaterial({ visible: false }));
+                loader.load(level.model, (gltf) => {
+                    const model = gltf.scene;
+                    model.scale.set(7, 7, 7);
+                    model.rotateX(Math.PI / 2);
+                    model.rotateY(-(Math.PI / 6));
+                    model.position.y -= 1;
+                    model.position.x -= 2;
                     platform.add(model);
                 });
             } else {
@@ -995,6 +1012,17 @@ function move() {
                         }
                         if (maxLevel.value < LevelType.TRASH.value) {
                             setMaxLevel(LevelType.TRASH);
+                        }
+                        break;
+
+                    case LevelType.GRIMOIRE:
+                        // playSound("assets/sounds/se_common_landing_grimoire.wav");
+                        setLevelText(LevelType.GRIMOIRE.name);
+                        if (playerCurrentLevel !== LevelType.GRIMOIRE.name) {
+                            playerCurrentLevel = LevelType.GRIMOIRE.name;
+                        }
+                        if (maxLevel.value < LevelType.GRIMOIRE.value) {
+                            setMaxLevel(LevelType.GRIMOIRE);
                         }
                         break;
 
