@@ -1215,15 +1215,15 @@ dialog.querySelector('form').addEventListener('submit', async (e) => {
 
 // Pause menu elements
 const pauseMenu = document.getElementById('pauseMenu');
-const audioSettingsMenu = document.getElementById('audioSettingsMenu'); // New submenu
-const audioSettingsButton = document.getElementById('audioSettingsButton'); // New button
+const audioSettingsMenu = document.getElementById('audioSettingsMenu');
+const audioSettingsButton = document.getElementById('audioSettingsButton');
 const musicToggle = document.getElementById('musicToggle');
-const voiceToggle = document.getElementById('voiceToggle'); // New button
-const volumeSlider = document.getElementById('volumeSlider'); // New slider
+const voiceToggle = document.getElementById('voiceToggle');
+const volumeSlider = document.getElementById('volumeSlider');
 const returnButton = document.getElementById('returnButton');
 const submitScoreButton = document.getElementById('submitScoreButton');
 const resumeButton = document.getElementById('resumeButton');
-const backToPauseMenuButton = document.getElementById('backToPauseMenuButton'); // New button
+const backToPauseMenuButton = document.getElementById('backToPauseMenuButton');
 
 // Event listeners for pause menu buttons
 audioSettingsButton.addEventListener('click', () => {
@@ -1276,6 +1276,9 @@ voiceToggle.addEventListener('click', () => {
 });
 volumeSlider.addEventListener('input', (event) => {
     volume = event.target.value / 100;
+    if (backgroundMusic) {
+        backgroundMusic.volume = 0.3 * volume; // Update background music volume dynamically
+    }
 });
 
 // Function to show/hide pause menu
