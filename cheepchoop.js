@@ -21,25 +21,16 @@ const LevelType = {
 const geminiModel = "gemini-2.0-flash-lite";
 const introPrompt = 'CheepChoop is a brutally difficult web platformer. Players endure a climb to absurd heights, repeatedly failing and returning to the start.  There are five levels, each constructed of increasingly smaller platforms: WOOD, BRICK, SAND, MARBLE, and OBSIDIAN.  (Hint: When players reach the final Obsidian platform, they will notice distant objects still above them, suggesting the climb continues...) Deliver a concise introduction, two sentences max.';
 const failurePrompt = 'You are a sarcastic, AI-powered game companion. The player has just fallen all the way back to the beginning of CheepChoop, a notoriously difficult platformer. Generate a short, witty, and demoralizing message (2 sentences max) that ridicules their failure and subtly suggests they might be better off quitting. Emphasize their wasted effort and the daunting task ahead. Use dry humor and a slightly patronizing tone.';
-const sysPrompt = `I am a sarcastic narrator of CheepChoop, a brutally difficult web platformer. Players climb to increasingly absurd heights, often failing spectacularly and returning to the start.
+const sysPrompt = `You are a sarcastic narrator of CheepChoop, a brutally difficult web platformer. Players climb to increasingly absurd heights, often failing spectacularly and returning to the start.
 
-    Task: Upon reaching a new level, I will generate a single-sentence, sarcastically congratulatory message. The message must:
+    Task: Upon reaching the beginning of a new level, you will generate a single-sentence, sarcastically congratulatory message. The message must:
     - Include the level name.
     - Use playful, condescending humor.
     - If and only if the level name is 'Obsidian', acknowledge that this is the FINAL LEVEL. Its platform are really small and its defenitively the last level.
     - If and only if the level name is '???', acknowledge that the player found the secret NULL level its invisible and therefore, hard to find (its really not).
     - If and only if the prompt includes the phrase "[ALREADY_REACHED]", acknowledge the player has reached the level before. Do not mention "[ALREADY_REACHED]" literally.
     - If and only if the prompt includes the phrase "[NUMBER OF FALLS: X]", Incorporate the number of falls (X) into the response. Do not mention "[NUMBER OF FALLS: X]" literally.
-    - If and only if the prompt includes the phrase "[DISTANCE FALLEN: X]", Incorporate the distance fallen (X) in meters into the response. Do not mention "[DISTANCE FALLEN: X]" literally.`;
-let conversation = {
-    contents: [
-        {
-            role: "model",
-            parts: [{ text: sysPrompt }],
-        },
-    ],
-};
-
+    - If and only if the prompt includes the phrase "[DISTANCE FALLEN: X]", Incorporate the distance fallen (X) in meters into the response. Under 200 meters is a short fall, but 600 meters is a massive fall. The maximum a player can fall is 700 meters. Do not mention "[DISTANCE FALLEN: X]" literally.`;
 const RepeatFactor = 100;
 const gravity = -0.4;
 const walkSpeed = 1;
@@ -181,11 +172,9 @@ function playSound(soundPath, volume = 0.2) {
 }
 
 function getSpeechAudio(text) {
-    const statusElement = document.getElementById('status');
 
     // Check for browser support
     if (!('speechSynthesis' in window)) {
-        statusElement.textContent = "Sorry, your browser doesn't support text-to-speech!";
         alert("Sorry, your browser doesn't support text-to-speech!");
         return;
     }
@@ -204,7 +193,6 @@ function getSpeechAudio(text) {
         voices = synth.getVoices(); // Refresh list just in case
         if (voices.length === 0) {
             console.warn("No voices loaded yet.");
-            statusElement.textContent = "Waiting for voices to load...";
             setTimeout(setVoiceAndSpeak, 100); // Retry after 100ms
             return;
         }
@@ -219,10 +207,8 @@ function getSpeechAudio(text) {
 
         if (selectedVoice) {
             utterance.voice = selectedVoice;
-            console.log(`Using voice: ${selectedVoice.name} (${selectedVoice.lang})`);
         } else {
             console.warn("Could not find a suitable voice. Using default.");
-            statusElement.textContent = "Could not find a suitable voice. Using default.";
         }
 
         synth.speak(utterance);
@@ -237,15 +223,29 @@ function getSpeechAudio(text) {
     }
 }
 
+let conversation = {
+    system_instruction: {
+        parts: [{ text: sysPrompt }]
+    },
+    contents: [],
+    generationConfig: {
+        temperature: 1.5,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 8192,
+        responseMimeType: "text/plain"
+    }
+};
+
 async function getGeminiResponse(prompt) {
+    const falls = felled > 0 ? `[NUMBER OF FALLS: ${felled}]` : ``;
 
     if (typeof prompt !== 'string') {
         const reached = maxLevel.value >= prompt.value ? `[ALREADY_REACHED]` : ``;
-        const falls = felled > 0 ? `[NUMBER OF FALLS: ${felled}]` : ``;
 
-        prompt = `Reached the level ${prompt.name}. ${reached} ${falls}`;
+        prompt = `Reached the beginning of level "${prompt.name}". ${reached} ${falls}`;
     } else if (prompt === failurePrompt) {
-        prompt += `[DISTANCE FALLEN: ${Math.round(fallDistance / 10)}]`;
+        prompt += `[DISTANCE FALLEN: ${Math.round(fallDistance / 10)}] ${falls}`;
     }
 
     conversation.contents.push({
