@@ -1018,7 +1018,7 @@ function move() {
                         break;
 
                     case LevelType.GRIMOIRE:
-                        // playSound("assets/sounds/se_common_landing_grimoire.wav");
+                        playSound("assets/sounds/se_common_landing_book.wav");
                         setLevelText(LevelType.GRIMOIRE.name);
                         if (playerCurrentLevel !== LevelType.GRIMOIRE.name) {
                             playerCurrentLevel = LevelType.GRIMOIRE.name;
