@@ -15,9 +15,9 @@ export const handler = async (event, context) => {
             },
             body: JSON.stringify({
                 "voice": {
-                    "name": "en-GB-News-J",
+                    "name": "en-US-Standard-B",
                     "ssmlGender": "MALE",
-                    "languageCode": "en-GB"
+                    "languageCode": "en-US"
                 },
                 "input": {
                     "text": input
