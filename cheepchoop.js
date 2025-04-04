@@ -185,61 +185,6 @@ function playSound(soundPath) {
     sound.play().catch(error => console.log("Audio play failed:", error));
 }
 
-function oldgetSpeechAudio(text) {
-
-    // Check for browser support
-    if (!('speechSynthesis' in window)) {
-        noVoiceOver = true;
-        alert("Sorry, your browser doesn't support text-to-speech!");
-        return;
-    }
-
-    const synth = window.speechSynthesis;
-
-    // Cancel any ongoing speech immediately
-    synth.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-
-    utterance.volume = 0.8 * volume;
-
-    // Select a Voice (This is tricky and OS/browser dependent)
-    let voices = synth.getVoices();
-
-    const setVoiceAndSpeak = () => {
-        voices = synth.getVoices(); // Refresh list just in case
-        if (voices.length === 0) {
-            console.warn("No voices loaded yet.");
-            setTimeout(setVoiceAndSpeak, 100); // Retry after 100ms
-            return;
-        }
-
-        // Select the desired voice for CheepChoop
-        let selectedVoice = voices.filter(voice => voice.name.startsWith('Microsoft Mark'))[0];
-
-        // Fallback: Find the first available English voice, or just the very first voice
-        if (!selectedVoice) {
-            selectedVoice = voices.find(voice => voice.lang.startsWith('en')) || voices[0];
-        }
-
-        if (selectedVoice) {
-            utterance.voice = selectedVoice;
-        } else {
-            console.warn("Could not find a suitable voice. Using default.");
-        }
-
-        synth.speak(utterance);
-    };
-
-    // Voices might not be loaded immediately.
-    if (voices.length !== 0) {
-        setVoiceAndSpeak();
-    } else {
-        // Listen for the voices to change/load
-        synth.onvoiceschanged = setVoiceAndSpeak;
-    }
-}
-
 let noVoiceOver = false;
 let conversation = {
     system_instruction: {
@@ -254,16 +199,129 @@ let conversation = {
         responseMimeType: "text/plain"
     }
 };
-
+let voices = {
+    "voices": [
+    {
+      "name": "en-AU-Standard-A",
+      "ssmlGender": "FEMALE",
+      "languageCode": "en-AU"
+    },
+    {
+      "name": "en-AU-Standard-B",
+      "ssmlGender": "MALE",
+      "languageCode": "en-AU"
+    },
+    {
+      "name": "en-AU-Standard-C",
+      "ssmlGender": "FEMALE",
+      "languageCode": "en-AU"
+    },
+    {
+      "name": "en-AU-Standard-D",
+      "ssmlGender": "MALE",
+      "languageCode": "en-AU"
+    },
+    {
+      "name": "en-GB-Standard-A",
+      "ssmlGender": "FEMALE",
+      "languageCode": "en-GB"
+    },
+    {
+      "name": "en-GB-Standard-B",
+      "ssmlGender": "MALE",
+      "languageCode": "en-GB"
+    },
+    {
+      "name": "en-GB-Standard-C",
+      "ssmlGender": "FEMALE",
+      "languageCode": "en-GB"
+    },
+    {
+      "name": "en-GB-Standard-D",
+      "ssmlGender": "MALE",
+      "languageCode": "en-GB"
+    },
+    {
+      "name": "en-GB-Standard-F",
+      "ssmlGender": "FEMALE",
+      "languageCode": "en-GB"
+    },
+    {
+      "name": "en-GB-Standard-N",
+      "ssmlGender": "FEMALE",
+      "languageCode": "en-GB"
+    },
+    {
+      "name": "en-GB-Standard-O",
+      "ssmlGender": "MALE",
+      "languageCode": "en-GB"
+    },
+    {
+      "name": "en-US-Standard-A",
+      "ssmlGender": "MALE",
+      "languageCode": "en-US"
+    },
+    {
+      "name": "en-US-Standard-B",
+      "ssmlGender": "MALE",
+      "languageCode": "en-US"
+    },
+    {
+      "name": "en-US-Standard-C",
+      "ssmlGender": "FEMALE",
+      "languageCode": "en-US"
+    },
+    {
+      "name": "en-US-Standard-D",
+      "ssmlGender": "MALE",
+      "languageCode": "en-US"
+    },
+    {
+      "name": "en-US-Standard-E",
+      "ssmlGender": "FEMALE",
+      "languageCode": "en-US"
+    },
+    {
+      "name": "en-US-Standard-F",
+      "ssmlGender": "FEMALE",
+      "languageCode": "en-US"
+    },
+    {
+      "name": "en-US-Standard-G",
+      "ssmlGender": "FEMALE",
+      "languageCode": "en-US"
+    },
+    {
+      "name": "en-US-Standard-H",
+      "ssmlGender": "FEMALE",
+      "languageCode": "en-US"
+    },
+    {
+      "name": "en-US-Standard-I",
+      "ssmlGender": "MALE",
+      "languageCode": "en-US"
+    },
+    {
+      "name": "en-US-Standard-J",
+      "ssmlGender": "MALE",
+      "languageCode": "en-US"
+    }
+  ]
+}
 let speechAudio = null;
 async function getSpeechAudio(prompt) {
+    const voice = voices.voices[Math.floor(Math.random() * voices.voices.length)];
+    console.log(`Using voice: ${voice.name}`);
+    
     try {
         const response = await fetch('/.netlify/functions/getSpeechAudio', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(prompt),
+            body: JSON.stringify({
+                input: prompt,
+                voice: voice}),
             credentials: 'same-origin'
         });
 
@@ -287,6 +345,7 @@ async function getSpeechAudio(prompt) {
         }
 
         speechAudio = new Audio(audioUrl);
+        speechAudio.volume = 0.8 * volume;
         speechAudio.play();
 
 

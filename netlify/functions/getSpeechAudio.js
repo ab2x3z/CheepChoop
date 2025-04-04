@@ -6,7 +6,7 @@ export const handler = async (event, context) => {
         };
     }
 
-    const input = JSON.parse(event.body);
+    const { input, voice } = JSON.parse(event.body);
     try {
         const response = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${process.env.GCLOUD}`, {
             method: 'POST',
@@ -14,11 +14,7 @@ export const handler = async (event, context) => {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                "voice": {
-                    "name": "en-US-Standard-B",
-                    "ssmlGender": "MALE",
-                    "languageCode": "en-US"
-                },
+                "voice": voice,
                 "input": {
                     "text": input
                 },
