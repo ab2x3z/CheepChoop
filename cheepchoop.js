@@ -309,8 +309,24 @@ let voices = {
   ]
 }
 let speechAudio = null;
+
+// Populate voice dropdown
+const voiceDropdown = document.getElementById('voiceDropdown');
+voices.voices.forEach((voice, index) => {
+    const option = document.createElement('option');
+    option.value = index;
+    option.textContent = `${voice.name} (${voice.languageCode}, ${voice.ssmlGender})`;
+    voiceDropdown.appendChild(option);
+});
+
+// Update selected voice
+let selectedVoiceIndex = 0;
+voiceDropdown.addEventListener('change', (event) => {
+    selectedVoiceIndex = event.target.value;
+});
+
 async function getSpeechAudio(prompt) {
-    const voice = voices.voices[Math.floor(Math.random() * voices.voices.length)];
+    const voice = voices.voices[selectedVoiceIndex];
     console.log(`Using voice: ${voice.name}`);
     
     try {
