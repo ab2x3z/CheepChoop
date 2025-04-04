@@ -178,7 +178,7 @@ function playSound(soundPath) {
     sound.play().catch(error => console.log("Audio play failed:", error));
 }
 
-function getSpeechAudio(text) {
+function oldgetSpeechAudio(text) {
 
     // Check for browser support
     if (!('speechSynthesis' in window)) {
@@ -247,6 +247,46 @@ let conversation = {
         responseMimeType: "text/plain"
     }
 };
+
+let speechAudio = null;
+async function getSpeechAudio(prompt) {
+    try {
+        const response = await fetch('/.netlify/functions/getSpeechAudio', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(prompt),
+            credentials: 'same-origin'
+        });
+
+        if (!response.ok) throw new Error('');
+
+        const base64Audio = await response.json();
+
+        const binaryString = atob(base64Audio.audioContent);
+        const byteArray = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            byteArray[i] = binaryString.charCodeAt(i);
+        }
+
+        const blob = new Blob([byteArray], { type: 'audio/mp3' });
+        const audioUrl = URL.createObjectURL(blob);
+
+        if (speechAudio) {
+            speechAudio.pause();
+            speechAudio.currentTime = 0;
+            speechAudio = null;
+        }
+
+        speechAudio = new Audio(audioUrl);
+        speechAudio.play();
+
+
+    } catch (error) {
+        console.error("Error fetching and playing audio:", error);
+    }
+}
 
 async function getGeminiResponse(prompt) {
     if (noVoiceOver) { return; }
