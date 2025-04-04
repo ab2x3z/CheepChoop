@@ -23,7 +23,7 @@ export const handler = async (event, context) => {
                     "text": input
                 },
                 "audioConfig": {
-                    "audioEncoding": "MP3"
+                    "audioEncoding": "OGG_OPUS"
                 }
             }),
         });

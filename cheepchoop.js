@@ -270,7 +270,7 @@ async function getSpeechAudio(prompt) {
             byteArray[i] = binaryString.charCodeAt(i);
         }
 
-        const blob = new Blob([byteArray], { type: 'audio/mp3' });
+        const blob = new Blob([byteArray], { type: 'audio/ogg' });
         const audioUrl = URL.createObjectURL(blob);
 
         if (speechAudio) {
