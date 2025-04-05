@@ -32,7 +32,7 @@ const sysPrompt = `You are a sarcastic narrator for CheepChoop, a notoriously di
         *   **Secret Level (Conditional):** IF the level name is '???', acknowledge the player has found the secret NULL level, calling attention to its invisible nature and (not really) difficult to find.
     *   **Previously Reached (Conditional):** IF the prompt includes "[ALREADY_REACHED]", acknowledge that the player has reached this level *before*. Do *NOT* mention "[ALREADY_REACHED]" directly. Imply it with a phrase like "back again?" or "still here?"
     *   **Number of Falls (Conditional):** IF the prompt includes "[NUMBER OF FALLS: X]", incorporate the number of falls (X) into the response in a mocking way. Do *NOT* mention "[NUMBER OF FALLS: X]" literally. Example: "After only X falls, you've managed this?"
-    *   **Distance Fallen (Conditional):** IF the prompt includes "[DISTANCE FALLEN: X]", incorporate the distance fallen (X) in meters into the response. Classify the fall as follows (Do *NOT* mention "[DISTANCE FALLEN: X]" literally):
+    *   **Distance Fallen (Conditional):** IF the prompt includes "[DISTANCE FALLEN: X]", YOU MUST incorporate the distance fallen (X) in meters into the response. Classify the fall as follows (Do *NOT* mention "[DISTANCE FALLEN: X]" literally):
         *   **Short Fall:** Under 200 meters.
         *   **Medium Fall:** 200 - 599 meters.
         *   **Massive Fall:** 600 - 767 meters (The maximum fall distance).
@@ -185,61 +185,6 @@ function playSound(soundPath) {
     sound.play().catch(error => console.log("Audio play failed:", error));
 }
 
-function oldgetSpeechAudio(text) {
-
-    // Check for browser support
-    if (!('speechSynthesis' in window)) {
-        noVoiceOver = true;
-        alert("Sorry, your browser doesn't support text-to-speech!");
-        return;
-    }
-
-    const synth = window.speechSynthesis;
-
-    // Cancel any ongoing speech immediately
-    synth.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-
-    utterance.volume = 0.8 * volume;
-
-    // Select a Voice (This is tricky and OS/browser dependent)
-    let voices = synth.getVoices();
-
-    const setVoiceAndSpeak = () => {
-        voices = synth.getVoices(); // Refresh list just in case
-        if (voices.length === 0) {
-            console.warn("No voices loaded yet.");
-            setTimeout(setVoiceAndSpeak, 100); // Retry after 100ms
-            return;
-        }
-
-        // Select the desired voice for CheepChoop
-        let selectedVoice = voices.filter(voice => voice.name.startsWith('Microsoft Mark'))[0];
-
-        // Fallback: Find the first available English voice, or just the very first voice
-        if (!selectedVoice) {
-            selectedVoice = voices.find(voice => voice.lang.startsWith('en')) || voices[0];
-        }
-
-        if (selectedVoice) {
-            utterance.voice = selectedVoice;
-        } else {
-            console.warn("Could not find a suitable voice. Using default.");
-        }
-
-        synth.speak(utterance);
-    };
-
-    // Voices might not be loaded immediately.
-    if (voices.length !== 0) {
-        setVoiceAndSpeak();
-    } else {
-        // Listen for the voices to change/load
-        synth.onvoiceschanged = setVoiceAndSpeak;
-    }
-}
-
 let noVoiceOver = false;
 let conversation = {
     system_instruction: {
@@ -254,16 +199,132 @@ let conversation = {
         responseMimeType: "text/plain"
     }
 };
-
+let voices = {
+    "voices": [
+    {
+      "name": "en-AU-Standard-A",
+      "ssmlGender": "FEMALE",
+      "languageCode": "en-AU"
+    },
+    {
+      "name": "en-AU-Standard-B",
+      "ssmlGender": "MALE",
+      "languageCode": "en-AU"
+    },
+    {
+      "name": "en-AU-Standard-C",
+      "ssmlGender": "FEMALE",
+      "languageCode": "en-AU"
+    },
+    {
+      "name": "en-AU-Standard-D",
+      "ssmlGender": "MALE",
+      "languageCode": "en-AU"
+    },
+    {
+      "name": "en-GB-Standard-A",
+      "ssmlGender": "FEMALE",
+      "languageCode": "en-GB"
+    },
+    {
+      "name": "en-GB-Standard-B",
+      "ssmlGender": "MALE",
+      "languageCode": "en-GB"
+    },
+    {
+      "name": "en-GB-Standard-C",
+      "ssmlGender": "FEMALE",
+      "languageCode": "en-GB"
+    },
+    {
+      "name": "en-GB-Standard-D",
+      "ssmlGender": "MALE",
+      "languageCode": "en-GB"
+    },
+    {
+      "name": "en-GB-Standard-F",
+      "ssmlGender": "FEMALE",
+      "languageCode": "en-GB"
+    },
+    {
+      "name": "en-GB-Standard-N",
+      "ssmlGender": "FEMALE",
+      "languageCode": "en-GB"
+    },
+    {
+      "name": "en-GB-Standard-O",
+      "ssmlGender": "MALE",
+      "languageCode": "en-GB"
+    },
+    {
+      "name": "en-US-Standard-A",
+      "ssmlGender": "MALE",
+      "languageCode": "en-US"
+    },
+    {
+      "name": "en-US-Standard-B",
+      "ssmlGender": "MALE",
+      "languageCode": "en-US"
+    },
+    {
+      "name": "en-US-Standard-C",
+      "ssmlGender": "FEMALE",
+      "languageCode": "en-US"
+    },
+    {
+      "name": "en-US-Standard-D",
+      "ssmlGender": "MALE",
+      "languageCode": "en-US"
+    },
+    {
+      "name": "en-US-Standard-E",
+      "ssmlGender": "FEMALE",
+      "languageCode": "en-US"
+    },
+    {
+      "name": "en-US-Standard-F",
+      "ssmlGender": "FEMALE",
+      "languageCode": "en-US"
+    },
+    {
+      "name": "en-US-Standard-G",
+      "ssmlGender": "FEMALE",
+      "languageCode": "en-US"
+    },
+    {
+      "name": "en-US-Standard-H",
+      "ssmlGender": "FEMALE",
+      "languageCode": "en-US"
+    },
+    {
+      "name": "en-US-Standard-I",
+      "ssmlGender": "MALE",
+      "languageCode": "en-US"
+    },
+    {
+      "name": "en-US-Standard-J",
+      "ssmlGender": "MALE",
+      "languageCode": "en-US"
+    }
+  ]
+}
 let speechAudio = null;
+
+// Default to "en-US-Standard-B"
+let selectedVoiceIndex = 12;
+
 async function getSpeechAudio(prompt) {
+    const voice = voices.voices[selectedVoiceIndex];
+    
     try {
         const response = await fetch('/.netlify/functions/getSpeechAudio', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(prompt),
+            body: JSON.stringify({
+                input: prompt,
+                voice: voice}),
             credentials: 'same-origin'
         });
 
@@ -287,6 +348,7 @@ async function getSpeechAudio(prompt) {
         }
 
         speechAudio = new Audio(audioUrl);
+        speechAudio.volume = 0.8 * volume;
         speechAudio.play();
 
 
@@ -1267,6 +1329,7 @@ const audioSettingsMenu = document.getElementById('audioSettingsMenu');
 const audioSettingsButton = document.getElementById('audioSettingsButton');
 const musicToggle = document.getElementById('musicToggle');
 const voiceToggle = document.getElementById('voiceToggle');
+const voiceDropdown = document.getElementById('voiceDropdown');
 const volumeSlider = document.getElementById('volumeSlider');
 const returnButton = document.getElementById('returnButton');
 const submitScoreButton = document.getElementById('submitScoreButton');
@@ -1314,10 +1377,15 @@ resumeButton.addEventListener('click', () => {
 // Placeholder for voice toggle and volume slider logic
 voiceToggle.addEventListener('click', () => {
     if (noVoiceOver) {
+        voiceDropdown.disabled = false;
         noVoiceOver = false;
         voiceToggle.textContent = 'Disable Voice Over';
     } else {
-        getSpeechAudio(''); // Interupt any speech
+        if (speechAudio) {
+            speechAudio.pause();
+            speechAudio = null;
+        }
+        voiceDropdown.disabled = true;
         noVoiceOver = true;
         voiceToggle.textContent = 'Enable Voice Over';
     }
@@ -1327,6 +1395,20 @@ volumeSlider.addEventListener('input', (event) => {
     if (backgroundMusic) {
         backgroundMusic.volume = 0.3 * volume; // Update background music volume dynamically
     }
+});
+
+// Populate voice dropdown
+voices.voices.forEach((voice, index) => {
+    const option = document.createElement('option');
+    option.value = index;
+    option.textContent = `${voice.name} (${voice.languageCode}, ${voice.ssmlGender})`;
+    voiceDropdown.appendChild(option);
+});
+voiceDropdown.value = selectedVoiceIndex;
+
+voiceDropdown.addEventListener('change', (event) => {
+    selectedVoiceIndex = event.target.value;
+    getSpeechAudio(`Welcome to CheepChoop. Will this voice be the one?`);
 });
 
 // Function to show/hide pause menu

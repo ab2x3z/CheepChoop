@@ -25,14 +25,16 @@
   </dialog>
   <div id="pauseMenu">
     <button id="resumeButton">Resume</button>
-    <button id="audioSettingsButton">Audio Settings</button> <!-- New button -->
+    <button id="audioSettingsButton">Audio Settings</button>
     <button id="submitScoreButton">Submit High Score</button>
     <button id="returnButton">Return to Main Menu</button>
   </div>
 
-  <div id="audioSettingsMenu" style="display: none;"> <!-- New submenu -->
+  <div id="audioSettingsMenu" style="display: none;">
     <button id="musicToggle">Disable Music</button>
     <button id="voiceToggle">Disable Voiceover</button>
+    <label for="voiceDropdown">Voice:</label>
+    <select id="voiceDropdown"></select>
     <label for="volumeSlider">Volume:</label>
     <input type="range" id="volumeSlider" min="0" max="100" value="100">
     <button id="backToPauseMenuButton">Back</button>
