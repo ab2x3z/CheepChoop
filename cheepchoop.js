@@ -32,7 +32,7 @@ const sysPrompt = `You are a sarcastic narrator for CheepChoop, a notoriously di
         *   **Secret Level (Conditional):** IF the level name is '???', acknowledge the player has found the secret NULL level, calling attention to its invisible nature and (not really) difficult to find.
     *   **Previously Reached (Conditional):** IF the prompt includes "[ALREADY_REACHED]", acknowledge that the player has reached this level *before*. Do *NOT* mention "[ALREADY_REACHED]" directly. Imply it with a phrase like "back again?" or "still here?"
     *   **Number of Falls (Conditional):** IF the prompt includes "[NUMBER OF FALLS: X]", incorporate the number of falls (X) into the response in a mocking way. Do *NOT* mention "[NUMBER OF FALLS: X]" literally. Example: "After only X falls, you've managed this?"
-    *   **Distance Fallen (Conditional):** IF the prompt includes "[DISTANCE FALLEN: X]", incorporate the distance fallen (X) in meters into the response. Classify the fall as follows (Do *NOT* mention "[DISTANCE FALLEN: X]" literally):
+    *   **Distance Fallen (Conditional):** IF the prompt includes "[DISTANCE FALLEN: X]", YOU MUST incorporate the distance fallen (X) in meters into the response. Classify the fall as follows (Do *NOT* mention "[DISTANCE FALLEN: X]" literally):
         *   **Short Fall:** Under 200 meters.
         *   **Medium Fall:** 200 - 599 meters.
         *   **Massive Fall:** 600 - 767 meters (The maximum fall distance).
@@ -310,24 +310,11 @@ let voices = {
 }
 let speechAudio = null;
 
-// Populate voice dropdown
-const voiceDropdown = document.getElementById('voiceDropdown');
-voices.voices.forEach((voice, index) => {
-    const option = document.createElement('option');
-    option.value = index;
-    option.textContent = `${voice.name} (${voice.languageCode}, ${voice.ssmlGender})`;
-    voiceDropdown.appendChild(option);
-});
-
-// Update selected voice
-let selectedVoiceIndex = 0;
-voiceDropdown.addEventListener('change', (event) => {
-    selectedVoiceIndex = event.target.value;
-});
+// Default to "en-US-Standard-B"
+let selectedVoiceIndex = 12;
 
 async function getSpeechAudio(prompt) {
     const voice = voices.voices[selectedVoiceIndex];
-    console.log(`Using voice: ${voice.name}`);
     
     try {
         const response = await fetch('/.netlify/functions/getSpeechAudio', {
@@ -1342,6 +1329,7 @@ const audioSettingsMenu = document.getElementById('audioSettingsMenu');
 const audioSettingsButton = document.getElementById('audioSettingsButton');
 const musicToggle = document.getElementById('musicToggle');
 const voiceToggle = document.getElementById('voiceToggle');
+const voiceDropdown = document.getElementById('voiceDropdown');
 const volumeSlider = document.getElementById('volumeSlider');
 const returnButton = document.getElementById('returnButton');
 const submitScoreButton = document.getElementById('submitScoreButton');
@@ -1389,10 +1377,15 @@ resumeButton.addEventListener('click', () => {
 // Placeholder for voice toggle and volume slider logic
 voiceToggle.addEventListener('click', () => {
     if (noVoiceOver) {
+        voiceDropdown.disabled = false;
         noVoiceOver = false;
         voiceToggle.textContent = 'Disable Voice Over';
     } else {
-        getSpeechAudio(''); // Interupt any speech
+        if (speechAudio) {
+            speechAudio.pause();
+            speechAudio = null;
+        }
+        voiceDropdown.disabled = true;
         noVoiceOver = true;
         voiceToggle.textContent = 'Enable Voice Over';
     }
@@ -1402,6 +1395,20 @@ volumeSlider.addEventListener('input', (event) => {
     if (backgroundMusic) {
         backgroundMusic.volume = 0.3 * volume; // Update background music volume dynamically
     }
+});
+
+// Populate voice dropdown
+voices.voices.forEach((voice, index) => {
+    const option = document.createElement('option');
+    option.value = index;
+    option.textContent = `${voice.name} (${voice.languageCode}, ${voice.ssmlGender})`;
+    voiceDropdown.appendChild(option);
+});
+voiceDropdown.value = selectedVoiceIndex;
+
+voiceDropdown.addEventListener('change', (event) => {
+    selectedVoiceIndex = event.target.value;
+    getSpeechAudio(`Welcome to CheepChoop. Will this voice be the one?`);
 });
 
 // Function to show/hide pause menu

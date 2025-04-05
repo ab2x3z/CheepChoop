@@ -10,6 +10,9 @@ export const handler = async (event, context) => {
 
     try {
         const result = await generateContent(geminiModel, conversation);
+
+        log(conversation.contents[conversation.contents.length - 1].parts[0].text, result.candidates[0].content.parts[0].text);
+
         return {
             statusCode: 200,
             headers: {
@@ -43,4 +46,13 @@ async function generateContent(geminiModel, conversation) {
         console.error('Error:', error);
         return null;
     }
+}
+
+function log(prompt, response){
+    const bold = "\x1b[1m"
+    const reset = "\x1b[0m"
+    const magenta = "\x1b[35m"
+    const cyan = "\x1b[36m"
+
+    console.log(`\n${bold}${magenta}Prompt:${reset} ${prompt}\n\n${bold}${cyan}Response:${reset} ${response}\n`);
 }
