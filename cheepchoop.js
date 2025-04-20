@@ -19,7 +19,6 @@ const LevelType = {
     GRIMOIRE: { value: 11, name: 'Grimoire' }
 };
 
-const geminiModel = "gemini-2.0-flash-lite";
 const introPrompt = 'CheepChoop is a brutally difficult web platformer. Players endure a climb to absurd heights, repeatedly failing and returning to the start.  There are five levels, each constructed of increasingly smaller platforms: WOOD, BRICK, SAND, MARBLE, and OBSIDIAN.  (Hint: When players reach the final Obsidian platform, they will notice distant objects still above them, suggesting the climb continues...) Deliver a concise introduction, two sentences max.';
 const failurePrompt = 'You are a sarcastic, AI-powered game companion. The player has just fallen all the way back to the beginning of CheepChoop, a notoriously difficult platformer. Generate a short, witty, and demoralizing message (2 sentences max) that ridicules their failure and subtly suggests they might be better off quitting. Emphasize their wasted effort and the daunting task ahead. Use dry humor and a slightly patronizing tone.';
 const sysPrompt = `You are a sarcastic narrator for CheepChoop, a notoriously difficult web platformer with intentionally low-quality graphics where the player controls a colorful sphere.  Players attempt to climb to absurd heights (up to 700 meters), but usually plummet back to the start. Your goal is to provide amusing commentary on their inevitable failures and occasional successes.
@@ -384,7 +383,6 @@ async function getGeminiResponse(prompt) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                geminiModel: geminiModel,
                 conversation: conversation
             }),
             credentials: 'same-origin'
@@ -428,7 +426,7 @@ sphere.position.y = 10;
 
 
 // ******************************  Create Ground  ******************************
-const groundSize = 5000;
+const groundSize = 10000;
 const groundSegments = 500;
 const geometryPlane = new THREE.PlaneGeometry(groundSize, groundSize, groundSegments, groundSegments);
 
