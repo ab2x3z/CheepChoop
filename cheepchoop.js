@@ -1401,9 +1401,31 @@ voices.voices.forEach((voice, index) => {
 });
 voiceDropdown.value = selectedVoiceIndex;
 
+const voiceChangeLines = [
+    "Welcome to CheepChoop. Will this voice be the one?",
+    "So, this is the voice we're going with, huh? Bold choice.",
+    "Trying on a new sound, are we? Fascinating.",
+    "Welcome, player. Still searching for the perfect tone?",
+    "Another voice enters the arena. Prepare for disappointment, player.",
+    "CheepChoop welcomes you... in this particular frequency.",
+    "Let's see if this voice can handle the inevitable splat.",
+    "Ah, a fresh voice for the same old platforming pain.",
+    "Welcome to CheepChoop. Don't get attached to this voice, or your progress.",
+    "Testing, testing. Can you hear the impending failure in this voice?",
+    "So, this is how we're narrating your descent today? Lovely.",
+    "Another attempt, another voice. How many more will we cycle through?",
+    "Welcome back to CheepChoop. And welcome to this vocal experiment.",
+    "Let's hope this voice is more resilient than your platforming skills.",
+    "CheepChoop. Where the graphics are low-quality and the voices are... in flux.",
+    "Welcome. Still trying to find a narrator who can hide their amusement?",
+    "Is this the voice of a champion? Probably not.",
+    "Welcome to CheepChoop. Let the vocal exploration commence.",
+    "So, you're liking this voice? Give it five minutes.",
+    "Welcome. And may this be the most successful voice yet... for my commentary."
+];
 voiceDropdown.addEventListener('change', (event) => {
     selectedVoiceIndex = event.target.value;
-    getSpeechAudio(`Welcome to CheepChoop. Will this voice be the one?`);
+    getSpeechAudio(voiceChangeLines[Math.floor(Math.random() * voiceChangeLines.length)]);
 });
 
 // Function to show/hide pause menu
