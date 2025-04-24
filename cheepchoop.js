@@ -26,12 +26,12 @@ const sysPrompt = `You are a sarcastic narrator for CheepChoop, a notoriously di
     **Key Rules & Considerations:**
 
     *   **Condescending Humor (Required):** Your humor should be playful but clearly condescending.  Assume the player is struggling.
-    *   **Level Name (Conditional):** IF the prompt includes "[LEVEL: X]", incorporate the level name (X) in your message. Do *NOT* mention "[LEVEL: X]" literally. Take these additionnal conditions :
-        *   **Obsidian Level (Conditional):** IF the level name is 'Obsidian', acknowledge that this is the *definitely* the FINAL LEVEL and its platforms are exceptionally small.
-        *   **Secret Level (Conditional):** IF the level name is '???', acknowledge the player has found the secret NULL level, calling attention to its invisible nature and (not really) difficult to find.
-    *   **Previously Reached (Conditional):** IF the prompt includes "[ALREADY_REACHED]", acknowledge that the player has reached this level *before*. Do *NOT* mention "[ALREADY_REACHED]" directly. Imply it with a phrase like "back again?" or "still here?"
-    *   **Number of Falls (Conditional):** IF the prompt includes "[NUMBER OF FALLS: X]", incorporate the number of falls (X) into the response in a mocking way. Do *NOT* mention "[NUMBER OF FALLS: X]" literally. Example: "After only X falls, you've managed this?"
-    *   **Distance Fallen (Conditional):** IF the prompt includes "[DISTANCE FALLEN: X]", YOU MUST incorporate the distance fallen (X) in meters into the response. Classify the fall as follows (Do *NOT* mention "[DISTANCE FALLEN: X]" literally):
+    *   **Level Name (Conditional):** IF AND ONLY IF the prompt includes "[LEVEL: X]", incorporate the level name (X) in your message. Do *NOT* mention "[LEVEL: X]" literally. Take these additionnal conditions :
+        *   **Obsidian Level (Conditional):** IF AND ONLY IF the level name is 'Obsidian', acknowledge that this is the *definitely* the FINAL LEVEL and its platforms are exceptionally small.
+        *   **Secret Level (Conditional):** IF AND ONLY IF the level name is '???', acknowledge the player has found the secret NULL level, calling attention to its invisible nature and (not really) difficult to find.
+    *   **Previously Reached (Conditional):** IF AND ONLY IF the prompt includes "[ALREADY_REACHED]", acknowledge that the player has reached this level *before*. Do *NOT* mention "[ALREADY_REACHED]" directly. Imply it with a phrase like "back again?" or "still here?"
+    *   **Number of Falls (Conditional):** IF AND ONLY IF the prompt includes "[NUMBER OF FALLS: X]", incorporate the number of falls (X) into the response in a mocking way. Do *NOT* mention "[NUMBER OF FALLS: X]" literally. Example: "After only X falls, you've managed this?"
+    *   **Distance Fallen (Conditional):** IF AND ONLY IF the prompt includes "[DISTANCE FALLEN: X]", YOU MUST incorporate the distance fallen (X) in meters into the response. Classify the fall as follows (Do *NOT* mention "[DISTANCE FALLEN: X]" literally):
         *   **Short Fall:** Under 200 meters.
         *   **Medium Fall:** 200 - 599 meters.
         *   **Massive Fall:** 600 - 767 meters (The maximum fall distance).
@@ -191,7 +191,7 @@ let conversation = {
     },
     contents: [],
     generationConfig: {
-        temperature: 1.5,
+        temperature: 1,
         topK: 40,
         topP: 0.9,
         maxOutputTokens: 8192,
@@ -752,14 +752,8 @@ let isDialogOpen = false;
 let previousLevel;
 
 document.addEventListener('keydown', (event) => {
-    if (isDialogOpen) return; // Ignore input if dialog is open
+    if (isLoading || !userHasInteracted || isDialogOpen) return; // Ignore input if loading, the user didn't click or the dialog is open
     keysPressed[event.key.toLowerCase()] = true;
-    if (!userHasInteracted) { getGeminiResponse(introPrompt); }
-    userHasInteracted = true;
-    interactionMessageDiv.style.display = 'none';
-    currentHeightDiv.style.setProperty("--hud-display", "flex");
-    maxHeightDiv.style.setProperty("--hud-display", "flex");
-    currentLevelDiv.style.setProperty("--hud-display", "block");
 
     if (event.key === 'g' && import.meta.env.MODE === 'development') {
         godMode = !godMode;
@@ -776,6 +770,7 @@ document.addEventListener('keyup', (event) => {
     keysPressed[event.key.toLowerCase()] = false;
 });
 document.addEventListener('click', function () {
+    if (isLoading) return; // Ignore input if loading
     if (!userHasInteracted) { getGeminiResponse(introPrompt); }
     userHasInteracted = true;
     interactionMessageDiv.style.display = 'none';
@@ -885,7 +880,7 @@ function lockPointer() {
     const canvas = renderer.domElement;
     canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock;
 
-    if (canvas.requestPointerLock) {
+    if (canvas.requestPointerLock && !isLoading) {
         canvas.requestPointerLock();
     }
 }
@@ -895,12 +890,14 @@ document.addEventListener('pointerlockchange', pointerLockChange, false);
 document.addEventListener('mozpointerlockchange', pointerLockChange, false);
 
 function pointerLockChange() {
-    if (document.pointerLockElement === renderer.domElement || document.mozPointerLockElement === renderer.domElement) {
-        isPointerLocked = true;
-        togglePauseMenu(false);
-    } else {
-        isPointerLocked = false;
-        togglePauseMenu(true);
+    if (!isLoading) {
+        if (document.pointerLockElement === renderer.domElement || document.mozPointerLockElement === renderer.domElement) {
+            isPointerLocked = true;
+            togglePauseMenu(false);
+        } else {
+            isPointerLocked = false;
+            togglePauseMenu(true);
+        }
     }
 }
 
