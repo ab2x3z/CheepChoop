@@ -195,7 +195,8 @@ let conversation = {
         topK: 40,
         topP: 0.9,
         maxOutputTokens: 8192,
-        responseMimeType: "text/plain"
+        responseMimeType: "text/plain",
+        thinkingConfig: { thinkingLevel: "MINIMAL" }
     }
 };
 let voices = {
