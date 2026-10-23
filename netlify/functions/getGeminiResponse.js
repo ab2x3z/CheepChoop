@@ -32,6 +32,8 @@ async function generateContent(conversation) {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'Referer': 'https://cheepchoop.netlify.app/',
+                'Origin': 'https://cheepchoop.netlify.app'
             },
             body: JSON.stringify(conversation),
         });

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { FontLoader } from 'three/addons/loaders/FontLoader.js';
 import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { PhononTTS } from 'phonon-tts';
 
 // ******************************  Enums and Constants  ******************************
 const LevelType = {
@@ -186,7 +187,7 @@ function playSound(soundPath) {
 
 let noVoiceOver = false;
 let conversation = {
-    system_instruction: {
+    systemInstruction: {
         parts: [{ text: sysPrompt }]
     },
     contents: [],
@@ -196,169 +197,124 @@ let conversation = {
         topP: 0.9,
         maxOutputTokens: 8192,
         responseMimeType: "text/plain",
-        thinkingConfig: { thinkingLevel: "MINIMAL" }
+        thinkingConfig: { 
+            thinkingBudget: 0
+        }
     }
 };
-let voices = {
-    "voices": [
-    {
-      "name": "en-AU-Standard-A",
-      "ssmlGender": "FEMALE",
-      "languageCode": "en-AU"
-    },
-    {
-      "name": "en-AU-Standard-B",
-      "ssmlGender": "MALE",
-      "languageCode": "en-AU"
-    },
-    {
-      "name": "en-AU-Standard-C",
-      "ssmlGender": "FEMALE",
-      "languageCode": "en-AU"
-    },
-    {
-      "name": "en-AU-Standard-D",
-      "ssmlGender": "MALE",
-      "languageCode": "en-AU"
-    },
-    {
-      "name": "en-GB-Standard-A",
-      "ssmlGender": "FEMALE",
-      "languageCode": "en-GB"
-    },
-    {
-      "name": "en-GB-Standard-B",
-      "ssmlGender": "MALE",
-      "languageCode": "en-GB"
-    },
-    {
-      "name": "en-GB-Standard-C",
-      "ssmlGender": "FEMALE",
-      "languageCode": "en-GB"
-    },
-    {
-      "name": "en-GB-Standard-D",
-      "ssmlGender": "MALE",
-      "languageCode": "en-GB"
-    },
-    {
-      "name": "en-GB-Standard-F",
-      "ssmlGender": "FEMALE",
-      "languageCode": "en-GB"
-    },
-    {
-      "name": "en-GB-Standard-N",
-      "ssmlGender": "FEMALE",
-      "languageCode": "en-GB"
-    },
-    {
-      "name": "en-GB-Standard-O",
-      "ssmlGender": "MALE",
-      "languageCode": "en-GB"
-    },
-    {
-      "name": "en-US-Standard-A",
-      "ssmlGender": "MALE",
-      "languageCode": "en-US"
-    },
-    {
-      "name": "en-US-Standard-B",
-      "ssmlGender": "MALE",
-      "languageCode": "en-US"
-    },
-    {
-      "name": "en-US-Standard-C",
-      "ssmlGender": "FEMALE",
-      "languageCode": "en-US"
-    },
-    {
-      "name": "en-US-Standard-D",
-      "ssmlGender": "MALE",
-      "languageCode": "en-US"
-    },
-    {
-      "name": "en-US-Standard-E",
-      "ssmlGender": "FEMALE",
-      "languageCode": "en-US"
-    },
-    {
-      "name": "en-US-Standard-F",
-      "ssmlGender": "FEMALE",
-      "languageCode": "en-US"
-    },
-    {
-      "name": "en-US-Standard-G",
-      "ssmlGender": "FEMALE",
-      "languageCode": "en-US"
-    },
-    {
-      "name": "en-US-Standard-H",
-      "ssmlGender": "FEMALE",
-      "languageCode": "en-US"
-    },
-    {
-      "name": "en-US-Standard-I",
-      "ssmlGender": "MALE",
-      "languageCode": "en-US"
-    },
-    {
-      "name": "en-US-Standard-J",
-      "ssmlGender": "MALE",
-      "languageCode": "en-US"
-    }
-  ]
-}
-let speechAudio = null;
 
-// Default to "en-US-Standard-B"
-let selectedVoiceIndex = 12;
+let ttsInstance = null;
+let speechAudio = null;
+// Gradium's catalog of 37 English voices
+const PHONON_VOICES = {
+    "Default (Built-in)": { name: "default", id: null, group: "Default" },
+
+    // English (US)
+    "Easton (US Male)": { name: "Easton", id: "LMDIYE0Oa377Qh6Z", group: "English (US)" },
+    "Micah (US Male)": { name: "Micah", id: "40QrMVgAxFiUnP9f", group: "English (US)" },
+    "Trevor (US Male)": { name: "Trevor", id: "0zLApsZfVLLNaEGl", group: "English (US)" },
+    "Russell (US Male)": { name: "Russell", id: "_6Aslh2DxfmnRLmP", group: "English (US)" },
+    "Preston (US Male)": { name: "Preston", id: "qIxlZ7Ei8KvWlyQH", group: "English (US)" },
+    "Miles (US Male)": { name: "Miles", id: "d9XCyhjo4JhkHF1d", group: "English (US)" },
+    "Zoey (US Female)": { name: "Zoey", id: "NbpkqMVS3CJeq2j8", group: "English (US)" },
+    "Juniper (US Female)": { name: "Juniper", id: "NIWIOv5vTi5eRMj8", group: "English (US)" },
+    "Everly (US Female)": { name: "Everly", id: "vjFyp2BcCyTlUmYb", group: "English (US)" },
+    "Harper (US Female)": { name: "Harper", id: "4SZHfMpw-p46Ywgs", group: "English (US)" },
+    "Hadley (US Female)": { name: "Hadley", id: "bXwrkHhURL1VFJdG", group: "English (US)" },
+    "Delia (US Female)": { name: "Delia", id: "nGzMHMPAWGaJFHOo", group: "English (US)" },
+
+    // English (UK)
+    "Alfie (UK Male)": { name: "Alfie", id: "X6NceqF285Gr04gb", group: "English (UK)" },
+    "Hugh (UK Male)": { name: "Hugh", id: "YyKcxPG7iIgS3jsK", group: "English (UK)" },
+    "Edwin (UK Male)": { name: "Edwin", id: "zUCxzrOrugTSis03", group: "English (UK)" },
+    "Spencer (UK Male)": { name: "Spencer", id: "JOW0vchyswkQUMDS", group: "English (UK)" },
+    "Toby (UK Male)": { name: "Toby", id: "dME3IWyZBvmh1n1q", group: "English (UK)" },
+    "Teddy (UK Male)": { name: "Teddy", id: "Zn7g6NxLqXlJb7Qi", group: "English (UK)" },
+    "Maeve (UK Female)": { name: "Maeve", id: "6PWnV0Nq4wu7RVBT", group: "English (UK)" },
+    "Freya (UK Female)": { name: "Freya", id: "GgfEkEJtxZR7gnpy", group: "English (UK)" },
+    "Pippa (UK Female)": { name: "Pippa", id: "uem82D50GRv2Dwma", group: "English (UK)" },
+    "Elodie-Rose (UK Female)": { name: "Elodie-Rose", id: "y9bQqIDnyxwqK01t", group: "English (UK)" },
+    "Imogen (UK Female)": { name: "Imogen", id: "gDT1nz7Ie36ZhL-C", group: "English (UK)" },
+    "Lottie (UK Female)": { name: "Lottie", id: "m9MxpY6IUGXtWp76", group: "English (UK)" },
+    "Bryony (UK Female)": { name: "Bryony", id: "gfP44RlHwr2kEwk7", group: "English (UK)" },
+
+    // Fantasy & Character Voices (great for a sarcastic narrator!)
+    "Azgorath": { name: "Azgorath", id: "dGyGDKo2osj7h3s7", group: "Fantasy & Characters" },
+    "Old Mortlake": { name: "Mortlake", id: "lX3LavMNdlIbgEHH", group: "Fantasy & Characters" },
+    "The Thing Under the Stairs": { name: "UnderStairs", id: "GXaSqMEmOg12OIYb", group: "Fantasy & Characters" },
+    "Vyrmathrax the Ancient": { name: "Vyrmathrax", id: "xO8xQo3BrB8FuI6J", group: "Fantasy & Characters" },
+    "Grub the Ogre": { name: "Grub", id: "cYtsRSxV5q9IMehn", group: "Fantasy & Characters" },
+    "Captain Silas Blackwater": { name: "Silas", id: "xPDpsV3F592srkjA", group: "Fantasy & Characters" },
+    "Morwenna of the Deep": { name: "Morwenna", id: "nOykTmcH9ydsGGIc", group: "Fantasy & Characters" },
+    "Fennick the Young Elf": { name: "Fennick", id: "cXoIXJ2llS8S0WOW", group: "Fantasy & Characters" },
+    "Master Aldric": { name: "Aldric", id: "gSgG5Tor0GPEnqzC", group: "Fantasy & Characters" },
+    "The Snow Queen": { name: "SnowQueen", id: "NIWoEurJHMJjyUTe", group: "Fantasy & Characters" },
+    "Sir Bramwell": { name: "Bramwell", id: "y2eiKxtQo2B67deU", group: "Fantasy & Characters" },
+    "Fairy Godmother": { name: "Godmother", id: "QXNr0SvkukLB4wPq", group: "Fantasy & Characters" }
+};
+
+// Dynamically registers the chosen voice if it hasn't been added to the runtime yet
+async function getOrRegisterVoice(voiceKey) {
+    const voiceInfo = PHONON_VOICES[voiceKey];
+    if (!voiceInfo || voiceInfo.name === 'default') {
+        return 'default';
+    }
+
+    // Check if already registered
+    if (ttsInstance.voices && ttsInstance.voices.includes(voiceInfo.name)) {
+        return voiceInfo.name;
+    }
+
+    // Register voice on the fly from Hugging Face
+    const url = `https://huggingface.co/gradium/phonon-voices/resolve/main/voices/${voiceInfo.id}.safetensors`;
+    await ttsInstance.addVoice(voiceInfo.name, url);
+    return voiceInfo.name;
+}
+
+// Initialize Phonon in the background (downloads ~65MB once, then cached by browser)
+async function initLocalTTS() {
+    if (!ttsInstance) {
+        console.log("Loading Phonon TTS model...");
+        ttsInstance = await PhononTTS.load({ lang: 'en' });
+        console.log("Phonon TTS loaded.");
+    }
+}
+initLocalTTS();
 
 async function getSpeechAudio(prompt) {
-    const voice = voices.voices[selectedVoiceIndex];
-    
+    if (noVoiceOver) return;
+
     try {
-        const response = await fetch('/.netlify/functions/getSpeechAudio', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                input: prompt,
-                voice: voice}),
-            credentials: 'same-origin'
-        });
+        await initLocalTTS();
 
-        if (!response.ok) throw new Error('');
+        // 1. Resolve and dynamically load voice
+        const selectedKey = voiceDropdown ? voiceDropdown.value : "Default (Built-in)";
+        const activeVoice = await getOrRegisterVoice(selectedKey);
 
-        const base64Audio = await response.json();
-
-        const binaryString = atob(base64Audio.audioContent);
-        const byteArray = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-            byteArray[i] = binaryString.charCodeAt(i);
-        }
-
-        const blob = new Blob([byteArray], { type: 'audio/ogg' });
-        const audioUrl = URL.createObjectURL(blob);
+        // 2. Synthesize using the registered voice name
+        const wavBlob = await ttsInstance.synthWav(prompt, { voice: activeVoice });
+        const audioUrl = URL.createObjectURL(wavBlob);
 
         if (speechAudio) {
             speechAudio.pause();
             speechAudio.currentTime = 0;
-            speechAudio = null;
         }
 
         speechAudio = new Audio(audioUrl);
         speechAudio.volume = 0.8 * volume;
-        speechAudio.play();
 
+        speechAudio.onended = () => {
+            URL.revokeObjectURL(audioUrl);
+        };
 
+        await speechAudio.play();
     } catch (error) {
-        console.error("Error fetching and playing audio:", error);
+        console.error("Phonon TTS playback error:", error);
     }
 }
 
 async function getGeminiResponse(prompt) {
-    if (noVoiceOver) { return; }
+    if (noVoiceOver) return;
 
     const height = `[DISTANCE FALLEN: ${Math.round(fallDistance / 10)}]`;
     const falls = felled > 0 ? `[NUMBER OF FALLS: ${felled}]` : ``;
@@ -389,7 +345,7 @@ async function getGeminiResponse(prompt) {
             credentials: 'same-origin'
         });
 
-        if (!response.ok) throw new Error('');
+        if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
 
         const result = await response.json();
         getSpeechAudio(result.candidates[0].content.parts[0].text.replace(/\*/g, ''));
@@ -399,7 +355,8 @@ async function getGeminiResponse(prompt) {
         });
 
     } catch (error) {
-
+        conversation.contents.pop(); // Remove user message on failure so roles stay alternating
+        console.error('Gemini API Error:', error);
     }
 }
 
@@ -748,6 +705,7 @@ const interactionMessageDiv = document.getElementById('interactionMessage');
 const currentHeightDiv = document.getElementById('currentHeight');
 const maxHeightDiv = document.getElementById('maxHeight');
 const currentLevelDiv = document.getElementById('currentLevel');
+const voiceDropdown = document.getElementById('voiceDropdown');
 const keysPressed = {};
 let isDialogOpen = false;
 let previousLevel;
@@ -772,7 +730,10 @@ document.addEventListener('keyup', (event) => {
 });
 document.addEventListener('click', function () {
     if (isLoading) return; // Ignore input if loading
-    if (!userHasInteracted) { getGeminiResponse(introPrompt); }
+
+    if (!userHasInteracted) { 
+        getGeminiResponse(introPrompt); 
+    }
     userHasInteracted = true;
     interactionMessageDiv.style.display = 'none';
     currentHeightDiv.style.setProperty("--hud-display", "flex");
@@ -1319,13 +1280,43 @@ dialog.querySelector('form').addEventListener('submit', async (e) => {
     }
 });
 
+// Automatically build the categorized dropdown
+function populateVoiceDropdown() {
+    const groups = {};
+    for (const [displayName, data] of Object.entries(PHONON_VOICES)) {
+        if (!groups[data.group]) {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = data.group;
+            groups[data.group] = optgroup;
+            voiceDropdown.appendChild(optgroup);
+        }
+        const option = document.createElement('option');
+        option.value = displayName;
+        option.textContent = displayName;
+        groups[data.group].appendChild(option);
+    }
+}
+populateVoiceDropdown();
+
+const voiceChangeLines = [
+    "Welcome to CheepChoop. Will this voice be the one?",
+    "So, this is the voice we're going with, huh? Bold choice.",
+    "Testing, testing. Can you hear the impending failure in this voice?"
+];
+
+voiceDropdown.addEventListener('change', () => {
+    if (!noVoiceOver) {
+        const randomLine = voiceChangeLines[Math.floor(Math.random() * voiceChangeLines.length)];
+        getSpeechAudio(randomLine);
+    }
+});
+
 // Pause menu elements
 const pauseMenu = document.getElementById('pauseMenu');
 const audioSettingsMenu = document.getElementById('audioSettingsMenu');
 const audioSettingsButton = document.getElementById('audioSettingsButton');
 const musicToggle = document.getElementById('musicToggle');
 const voiceToggle = document.getElementById('voiceToggle');
-const voiceDropdown = document.getElementById('voiceDropdown');
 const volumeSlider = document.getElementById('volumeSlider');
 const returnButton = document.getElementById('returnButton');
 const submitScoreButton = document.getElementById('submitScoreButton');
@@ -1370,63 +1361,27 @@ resumeButton.addEventListener('click', () => {
     lockPointer();
     togglePauseMenu(false);
 });
-// Placeholder for voice toggle and volume slider logic
+
+// Audio & Voice overrides
 voiceToggle.addEventListener('click', () => {
     if (noVoiceOver) {
-        voiceDropdown.disabled = false;
         noVoiceOver = false;
-        voiceToggle.textContent = 'Disable Voice Over';
+        voiceToggle.textContent = 'Disable Voiceover';
     } else {
         if (speechAudio) {
             speechAudio.pause();
             speechAudio = null;
         }
-        voiceDropdown.disabled = true;
         noVoiceOver = true;
-        voiceToggle.textContent = 'Enable Voice Over';
+        voiceToggle.textContent = 'Enable Voiceover';
     }
 });
+
 volumeSlider.addEventListener('input', (event) => {
     volume = event.target.value / 100;
     if (backgroundMusic) {
         backgroundMusic.volume = 0.3 * volume; // Update background music volume dynamically
     }
-});
-
-// Populate voice dropdown
-voices.voices.forEach((voice, index) => {
-    const option = document.createElement('option');
-    option.value = index;
-    option.textContent = `${voice.name} (${voice.languageCode}, ${voice.ssmlGender})`;
-    voiceDropdown.appendChild(option);
-});
-voiceDropdown.value = selectedVoiceIndex;
-
-const voiceChangeLines = [
-    "Welcome to CheepChoop. Will this voice be the one?",
-    "So, this is the voice we're going with, huh? Bold choice.",
-    "Trying on a new sound, are we? Fascinating.",
-    "Welcome, player. Still searching for the perfect tone?",
-    "Another voice enters the arena. Prepare for disappointment, player.",
-    "CheepChoop welcomes you... in this particular frequency.",
-    "Let's see if this voice can handle the inevitable splat.",
-    "Ah, a fresh voice for the same old platforming pain.",
-    "Welcome to CheepChoop. Don't get attached to this voice, or your progress.",
-    "Testing, testing. Can you hear the impending failure in this voice?",
-    "So, this is how we're narrating your descent today? Lovely.",
-    "Another attempt, another voice. How many more will we cycle through?",
-    "Welcome back to CheepChoop. And welcome to this vocal experiment.",
-    "Let's hope this voice is more resilient than your platforming skills.",
-    "CheepChoop. Where the graphics are low-quality and the voices are... in flux.",
-    "Welcome. Still trying to find a narrator who can hide their amusement?",
-    "Is this the voice of a champion? Probably not.",
-    "Welcome to CheepChoop. Let the vocal exploration commence.",
-    "So, you're liking this voice? Give it five minutes.",
-    "Welcome. And may this be the most successful voice yet... for my commentary."
-];
-voiceDropdown.addEventListener('change', (event) => {
-    selectedVoiceIndex = event.target.value;
-    getSpeechAudio(voiceChangeLines[Math.floor(Math.random() * voiceChangeLines.length)]);
 });
 
 // Function to show/hide pause menu

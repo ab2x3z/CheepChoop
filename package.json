@@ -17,11 +17,13 @@
         "@azure/identity": "^4.7.0",
         "@azure/keyvault-secrets": "^4.9.0",
         "@mlc-ai/web-llm": "^0.2.20",
+        "@xenova/transformers": "^2.17.2",
         "cookie": "^1.0.2",
         "oci-common": "^2.103.0",
         "oci-objectstorage": "^2.103.0",
         "oci-secrets": "^2.103.0",
         "oracledb": "^6.8.0",
+        "phonon-tts": "^0.4.1",
         "three": "^0.173.0",
         "uuid": "^11.1.0"
     }
